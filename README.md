@@ -1,22 +1,23 @@
-# Chatbot IA CRIPEN — 9e année
+# DjibotChat — Chatbot IA CRIPEN, 9e année
 
-Prototype éducatif pour aider les élèves à étudier des exercices à partir d'une photo ou d'un énoncé, en recherchant des extraits dans les guides du professeur au format PDF.
+Application Streamlit pour aider les élèves à travailler sur des exercices de 9e année à partir des guides du professeur : import de PDF, photo d'exercice, OCR, recherche de passages et réponse pédagogique avec références aux fichiers et pages.
 
-## Fonctionnalités
+## Fonctions actuelles
 
-- Import de plusieurs guides PDF et conservation du nom du fichier et du numéro de page.
-- Recherche des passages les plus pertinents.
-- Import de photos JPG/PNG et extraction de texte par OCR.
-- Réponse de base fondée sur les extraits retrouvés.
-- Option d'IA locale via Ollama pour expliquer les étapes en français.
+- Import de plusieurs guides PDF et conservation du nom de fichier et du numéro de page.
+- Chargement des PDF présents à la racine du dépôt et dans `data/guides_professeurs/` lors de l'indexation.
+- Import d'une photo JPG/PNG et OCR local via Tesseract.
+- Recherche textuelle des passages les plus proches, avec préférence pour le nom du fichier correspondant à la matière sélectionnée.
+- Réponse par Gemini API, Ollama local ou affichage des extraits sans IA.
+- Instruction explicite de signaler quand aucun corrigé suffisamment pertinent n'a été retrouvé au lieu d'inventer une correction officielle.
 
-> Ce prototype n'est pas un corrigé officiel. Vérifiez toujours les sources, les calculs et le texte reconnu sur les photos.
+## Matières visées
 
-## Installation sous Windows
+Mathématiques, SVT, Physique-Chimie, Français, Anglais, Histoire-Géographie et Informatique. La couverture réelle dépend des guides fournis.
 
-1. Installer Python 3.11 ou plus récent.
-2. Ouvrir PowerShell dans le dossier du projet.
-3. Exécuter :
+## Déploiement / installation Windows
+
+Python 3.11 ou plus récent recommandé.
 
 ```powershell
 py -m venv .venv
@@ -26,36 +27,39 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Guides du professeur
+Installez également Tesseract OCR avec les langues française et anglaise pour la reconnaissance des photos.
 
-Créez le dossier `data/guides_professeurs/` et placez-y les PDF que vous êtes autorisé à utiliser. Vous pouvez aussi importer les PDF depuis l'interface.
+## Utiliser Gemini
 
-## OCR
+1. Créez une clé dans [Google AI Studio](https://aistudio.google.com/apikey).
+2. En local, définissez la variable d'environnement `GEMINI_API_KEY` ou saisissez la clé dans le panneau latéral de l'application.
+3. Sur Streamlit Community Cloud, ajoutez `GEMINI_API_KEY = "votre_clé"` dans les paramètres **Secrets** de l'application.
+4. Ne mettez jamais la clé API dans un fichier versionné sur GitHub.
 
-L'OCR des photos nécessite l'application Tesseract installée sur l'ordinateur, avec les langues française et anglaise. Si l'OCR n'est pas disponible, saisissez l'énoncé manuellement.
+Modèle par défaut : `gemini-2.5-flash`. Vous pouvez le changer dans l'interface si votre compte donne accès à un autre modèle.
 
-## IA locale (facultative)
-
-Installez Ollama, puis téléchargez un modèle compatible, par exemple :
+## Utiliser Ollama localement (option alternative)
 
 ```powershell
 ollama pull qwen2.5:3b
 ```
 
-Dans l'application, activez ensuite l'option Ollama. Le modèle doit être disponible sur l'ordinateur où l'application s'exécute.
+Activez ensuite « Ollama local » et vérifiez que le service Ollama tourne sur l'ordinateur qui exécute l'application.
 
-## Lancement
+## Guides PDF
 
-```powershell
-streamlit run app.py
-```
+Les guides peuvent être importés depuis l'interface, ajoutés à la racine du dépôt ou placés dans `data/guides_professeurs/`. N'ajoutez que des documents que vous êtes autorisé à partager. Les fichiers PDF scannés dont les pages ne contiennent aucune couche texte ne sont pas encore indexés par OCR automatique.
+
+## Limites importantes
+
+- La recherche actuelle est une recherche textuelle par mots-clés, pas encore une recherche sémantique vectorielle.
+- L'OCR de photo utilise Tesseract et peut mal lire les formules, tableaux ou schémas : relisez le texte extrait.
+- Une page de guide qui ne contient pas de texte sélectionnable peut ne pas être exploitable.
+- Un passage proche ne prouve pas à lui seul qu'il s'agit du corrigé exact. Vérifiez toujours les sources et pages affichées.
+- Pour une application publique, il faudra tester les guides réels, ajouter des tests automatisés et surveiller les quotas de l'API.
 
 ## Structure
 
 - `app.py` : interface Streamlit.
-- `app/core.py` : extraction PDF, OCR, recherche et génération facultative via Ollama.
-- `data/guides_professeurs/` : emplacement des guides PDF locaux.
-
-## État du projet
-
-Version initiale de prototype. Avant un déploiement public, il faut tester les guides CRIPEN réels, ajouter des tests automatisés et sécuriser la configuration du service IA.
+- `app/core.py` : extraction PDF, OCR, recherche et appels Gemini/Ollama.
+- `data/guides_professeurs/` : emplacement facultatif des guides PDF locaux.
