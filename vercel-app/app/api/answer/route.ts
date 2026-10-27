@@ -14,6 +14,29 @@ function chunks(text: string, filename: string): Array<{filename:string;page:num
   return out;
 }
 
+const REPOSITORY_GUIDES = [
+  { filename: "math9eme.pdf", subjects: ["Mathématiques"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/math9eme.pdf" },
+  { filename: "svt.pdf", subjects: ["SVT"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/svt.pdf" },
+  { filename: "pc(1).pdf", subjects: ["Physique-Chimie"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/pc%281%29.pdf" },
+  { filename: "fr.pdf", subjects: ["Français"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/fr.pdf" },
+  { filename: "infos.pdf", subjects: ["Informatique"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/infos.pdf" },
+];
+const guideCache = new Map<string, Promise<Array<{filename:string;page:number;text:string}>>>();
+async function loadRepositoryGuide(guide: typeof REPOSITORY_GUIDES[number]) {
+  let cached = guideCache.get(guide.filename);
+  if (!cached) {
+    cached = (async () => {
+      const response = await fetch(guide.url, { signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw new Error("Impossible de charger le guide " + guide.filename + " (HTTP " + response.status + ").");
+      const parsed = await pdf(Buffer.from(await response.arrayBuffer()));
+      return chunks(parsed.text, guide.filename);
+    })();
+    guideCache.set(guide.filename, cached);
+    cached.catch(() => guideCache.delete(guide.filename));
+  }
+  return cached;
+}
+
 export async function POST(request: Request) {
   try {
     const key = process.env.GEMINI_API_KEY;
@@ -25,6 +48,10 @@ export async function POST(request: Request) {
     if (!question && !uploaded.some(f => f.type.startsWith("image/"))) return NextResponse.json({error:"Ajoute une photo de l’exercice ou écris ta question."},{status:400});
     if (uploaded.length > 8) return NextResponse.json({error:"Ajoute au maximum 8 photos ou guides à la fois."},{status:400});
     const docs: Array<{filename:string;page:number;text:string}> = [];
+    const selectedGuides = subject === "Toutes les matières" ? REPOSITORY_GUIDES : REPOSITORY_GUIDES.filter(guide => guide.subjects.includes(subject));
+    const guideResults = await Promise.allSettled(selectedGuides.map(loadRepositoryGuide));
+    for (const result of guideResults) { if (result.status === "fulfilled") docs.push(...result.value); }
+    const guideLoadWarnings = guideResults.filter((result): result is PromiseRejectedResult => result.status === "rejected").map(result => result.reason instanceof Error ? result.reason.message : "Un guide du dépôt GitHub n’a pas pu être chargé.");
     const imageParts: Array<{inline_data:{mime_type:string;data:string}}> = [];
     for (const file of uploaded) {
       if (file.size > 8 * 1024 * 1024) return NextResponse.json({error:`Le fichier ${file.name} dépasse 8 Mo.`},{status:413});
@@ -49,7 +76,7 @@ export async function POST(request: Request) {
       if(subject !== "Toutes les matières" && (terms[subject] ?? []).some(t=>filename.includes(t))) score += .2;
       return {...d,score};
     }).filter(d=>d.score>=.08).sort((a,b)=>b.score-a.score).slice(0,6);
-    const context = scored.length ? scored.map(s=>`[Source : ${s.filename}, page PDF ${s.page}]\n${s.text}`).join("\n\n") : "[Aucun extrait suffisamment pertinent retrouvé dans les guides PDF joints à cette demande.]";
+    const context = scored.length ? scored.map(s=>`[Source : ${s.filename}, page PDF ${s.page}]\n${s.text}`).join("\n\n") : "[Aucun extrait suffisamment pertinent retrouvé dans les guides PDF du dépôt GitHub ou les PDF joints.]";
     const prompt = `Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français simple, étape par étape. Lis d’abord attentivement la photo jointe et retranscris mentalement l’énoncé sans inventer les parties illisibles. Utilise en priorité les extraits des guides PDF ci-dessous pour chercher un corrigé correspondant. Si un passage répond à l’exercice, explique le corrigé et cite le fichier et la page. Si aucun corrigé correspondant n’est présent dans les extraits, écris « CORRIGÉ DU GUIDE NON RETROUVÉ » puis propose une résolution indépendante en indiquant clairement qu’elle n’a pas été vérifiée dans le guide. Si la photo est floue ou incomplète, demande une nouvelle photo plutôt que d’inventer. Montre les étapes de calcul et explique les notions au niveau 9ème.\nMatière choisie : ${subject}\nConsigne de l’élève : ${effectiveQuestion}\nEXTRAITS DES GUIDES PDF JOINTS :\n${context}`;
     const parts: Array<Record<string,unknown>> = [{text:prompt}, ...imageParts];
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:.2}}),signal:AbortSignal.timeout(50000)});
@@ -57,7 +84,7 @@ export async function POST(request: Request) {
     if (!response.ok) return NextResponse.json({error:`Erreur Gemini : ${payload?.error?.message ?? response.statusText}`},{status:502});
     const answer = (payload?.candidates?.[0]?.content?.parts ?? []).map((p:{text?:string})=>p.text ?? "").join("\n").trim();
     if (!answer) return NextResponse.json({error:"Gemini n’a renvoyé aucune réponse exploitable."},{status:502});
-    return NextResponse.json({answer,sources:scored});
+    return NextResponse.json({answer,sources:scored,warning:guideLoadWarnings.length ? "Certains guides automatiques n’ont pas pu être chargés : " + guideLoadWarnings.join(" ") : undefined});
   } catch (e) {
     return NextResponse.json({error:e instanceof Error ? e.message : "Erreur de traitement de la photo ou des guides PDF."},{status:500});
   }
