@@ -64,8 +64,8 @@ export default function Home() {
       <label htmlFor="subject">Matière scolaire</label>
       <select id="subject" value={subject} onChange={e => setSubject(e.target.value)}>{subjects.map(s => <option key={s}>{s}</option>)}</select>
       <label htmlFor="guides">📸 Photo de l’exercice ou guide du professeur</label>
-      <input id="guides" type="file" accept="image/*,application/pdf,.pdf" capture="environment" multiple onChange={e => setFiles(e.target.files)} />
-      <p className="hint">Sur téléphone, choisis l’appareil photo pour photographier la page. Tu peux aussi sélectionner une photo déjà prise ou joindre un guide PDF du professeur (8 Mo maximum par fichier).</p>
+      <input id="guides" type="file" accept="image/*,application/pdf,.pdf" multiple onChange={e => setFiles(e.target.files)} />
+      <p className="hint">Sur Android, appuie sur « Choisir un fichier », puis sélectionne une photo déjà présente dans la Galerie/Photos, prends une nouvelle photo si cette option est proposée, ou joins un guide PDF. Formats acceptés : JPG, PNG, WEBP ou PDF ; 8 Mo maximum par fichier.</p>
       {files && files.length > 0 && <p className="hint">📎 {files.length} fichier(s) sélectionné(s).</p>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={e => setQuestion(e.target.value)} placeholder="Ex. : Corrige cet exercice étape par étape et cherche d’abord dans les guides du professeur…" />
