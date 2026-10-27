@@ -72,7 +72,7 @@ export default function Home() {
       <button className="submitButton" disabled={busy || (!question.trim() && !(files && files.length > 0))}>{busy ? "Lecture de l’exercice et recherche du corrigé…" : "📷 Lire la photo et corriger l’exercice"}</button>
     </form>
     {error && <section className="error" role="alert">{error}</section>}
-    {result && <section className="panel answer"><h2>Corrigé et explication</h2><div className="answerText">{result.answer}</div><h3>Sources retrouvées</h3>{result.sources.length ? result.sources.map((s,i)=><details key={`${s.filename}-${s.page}-${i}`}><summary>{s.filename} · page {s.page} · pertinence {s.score.toFixed(2)}</summary><p>{s.text}</p></details>) : <p>Aucun passage suffisamment pertinent n'a été trouvé dans les guides fournis.</p>}</section>}
+    {result && <section className="panel answer"><h2>Corrigé et explication</h2>{result.warning && <p className="hint">{result.warning}</p>}<div className="answerText">{result.answer}</div><h3>Sources retrouvées</h3>{result.sources.length ? result.sources.map((s,i)=><details key={`${s.filename}-${s.page}-${i}`}><summary>{s.filename} · page {s.page} · pertinence {s.score.toFixed(2)}</summary><p>{s.text}</p></details>) : <p>Aucun passage suffisamment pertinent n'a été trouvé dans les guides fournis.</p>}</section>}
     <footer><strong>DjibotChat 9ème · Djibouti 🇩🇯</strong><br />Apprendre, progresser et préparer mon BEF. Les réponses de l'IA doivent être vérifiées.</footer>
   </main>;
 }
