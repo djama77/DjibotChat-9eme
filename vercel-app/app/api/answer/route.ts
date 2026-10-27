@@ -67,7 +67,20 @@ export async function POST(request: Request) {
       }
     }
     const effectiveQuestion = question || "Lis attentivement la photo de l’exercice, identifie la matière et toutes les questions, puis donne un corrigé détaillé adapté à un élève de 9ème à Djibouti.";
-    const qTokens = new Set(tokens(effectiveQuestion));
+    let recognizedExercise = "";
+    if (imageParts.length) {
+      const ocrResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key), {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "Transcris fidèlement le texte de cet exercice photographié, y compris nombres, signes, formules et questions. Ne résous pas l’exercice. Si un élément est illisible, indique [illisible]." }, ...imageParts] }], generationConfig: { temperature: 0 } }),
+        signal: AbortSignal.timeout(20000)
+      });
+      if (ocrResponse.ok) {
+        const ocrPayload = await ocrResponse.json();
+        recognizedExercise = (ocrPayload?.candidates?.[0]?.content?.parts ?? []).map((part: {text?:string}) => part.text ?? "").join("\\n");
+      }
+    }
+    const searchText = question + " " + recognizedExercise + " " + subject;
+    const qTokens = new Set(tokens(searchText));
     const scored = docs.map(d => {
       const dt = tokens(d.text); const unique = new Set(dt); let common = 0; qTokens.forEach(t => { if(unique.has(t)) common++; });
       let score = common / Math.max(1,qTokens.size);
@@ -77,7 +90,7 @@ export async function POST(request: Request) {
       return {...d,score};
     }).filter(d=>d.score>=.08).sort((a,b)=>b.score-a.score).slice(0,6);
     const context = scored.length ? scored.map(s=>`[Source : ${s.filename}, page PDF ${s.page}]\n${s.text}`).join("\n\n") : "[Aucun extrait suffisamment pertinent retrouvé dans les guides PDF du dépôt GitHub ou les PDF joints.]";
-    const prompt = `Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français simple, étape par étape. Lis d’abord attentivement la photo jointe et retranscris mentalement l’énoncé sans inventer les parties illisibles. Utilise en priorité les extraits des guides PDF ci-dessous pour chercher un corrigé correspondant. Si un passage répond à l’exercice, explique le corrigé et cite le fichier et la page. Si aucun corrigé correspondant n’est présent dans les extraits, écris « CORRIGÉ DU GUIDE NON RETROUVÉ » puis propose une résolution indépendante en indiquant clairement qu’elle n’a pas été vérifiée dans le guide. Si la photo est floue ou incomplète, demande une nouvelle photo plutôt que d’inventer. Montre les étapes de calcul et explique les notions au niveau 9ème.\nMatière choisie : ${subject}\nConsigne de l’élève : ${effectiveQuestion}\nEXTRAITS DES GUIDES PDF JOINTS :\n${context}`;
+    const prompt = `Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français simple, étape par étape. Lis d’abord attentivement la photo jointe et retranscris mentalement l’énoncé sans inventer les parties illisibles. Utilise en priorité les extraits des guides PDF ci-dessous pour chercher un corrigé correspondant. Si un passage répond à l’exercice, explique le corrigé et cite le fichier et la page. Si aucun corrigé correspondant n’est présent dans les extraits, écris « CORRIGÉ DU GUIDE NON RETROUVÉ » puis propose une résolution indépendante en indiquant clairement qu’elle n’a pas été vérifiée dans le guide. Si la photo est floue ou incomplète, demande une nouvelle photo plutôt que d’inventer. Montre les étapes de calcul et explique les notions au niveau 9ème.\nMatière choisie : ${subject}\nConsigne de l’élève : ${effectiveQuestion}\nTexte reconnu sur la photo pour chercher dans les guides : ${recognizedExercise}\nEXTRAITS DES GUIDES PDF JOINTS :\n${context}`;
     const parts: Array<Record<string,unknown>> = [{text:prompt}, ...imageParts];
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:.2}}),signal:AbortSignal.timeout(50000)});
     const payload = await response.json();
