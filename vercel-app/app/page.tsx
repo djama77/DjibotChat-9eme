@@ -57,7 +57,7 @@ export default function Home() {
 
     <section className="befBanner"><div className="befBadge">🏆</div><div><h2>Objectif : réussir mon BEF !</h2><p>Révise régulièrement, entraîne-toi sur tes exercices et demande de l'aide quand une notion te semble difficile.</p></div></section>
 
-    <section className="notice"><strong>Conseil :</strong> ajoute les guides PDF de ton professeur pour que les réponses puissent s'appuyer sur leur contenu. Vérifie toujours les réponses avec ton professeur.</section>
+    <section className="notice"><strong>Guides du professeur connectés :</strong> les fichiers math9eme.pdf, svt.pdf, pc(1).pdf, fr.pdf et infos.pdf du dépôt GitHub sont recherchés automatiquement. Tu peux aussi ajouter une photo ou un autre PDF. Vérifie toujours les réponses avec ton professeur.</section>
 
     <form className="panel" onSubmit={submit}>
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis une matière, prends une photo ou joins un document.</p></div></div>
