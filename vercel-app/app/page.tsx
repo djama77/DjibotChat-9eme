@@ -60,7 +60,7 @@ export default function Home() {
     <section className="notice"><strong>Conseil :</strong> ajoute les guides PDF de ton professeur pour que les réponses puissent s'appuyer sur leur contenu. Vérifie toujours les réponses avec ton professeur.</section>
 
     <form className="panel" onSubmit={submit}>
-      <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis une matière et envoie ton exercice.</p></div></div>
+      <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis une matière, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
       <select id="subject" value={subject} onChange={e => setSubject(e.target.value)}>{subjects.map(s => <option key={s}>{s}</option>)}</select>
       <label htmlFor="guides">Cours ou guides du professeur (PDF)</label>
