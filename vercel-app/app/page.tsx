@@ -63,12 +63,13 @@ export default function Home() {
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis une matière, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
       <select id="subject" value={subject} onChange={e => setSubject(e.target.value)}>{subjects.map(s => <option key={s}>{s}</option>)}</select>
-      <label htmlFor="guides">Cours ou guides du professeur (PDF)</label>
-      <input id="guides" type="file" accept="application/pdf,.pdf" multiple onChange={e => setFiles(e.target.files)} />
-      <p className="hint">Tu peux sélectionner plusieurs fichiers PDF. Ils sont traités pour cette demande et ne sont pas conservés dans une bibliothèque permanente.</p>
-      <label htmlFor="question">Ta question ou ton exercice</label>
-      <textarea id="question" required minLength={2} rows={6} value={question} onChange={e => setQuestion(e.target.value)} placeholder="Écris l'énoncé, les données et les questions ici…" />
-      <button className="submitButton" disabled={busy || !question.trim()}>{busy ? "Préparation de l'explication…" : "✨ Expliquer mon exercice"}</button>
+      <label htmlFor="guides">📸 Photo de l’exercice ou guide du professeur</label>
+      <input id="guides" type="file" accept="image/*,application/pdf,.pdf" capture="environment" multiple onChange={e => setFiles(e.target.files)} />
+      <p className="hint">Sur téléphone, choisis l’appareil photo pour photographier la page. Tu peux aussi sélectionner une photo déjà prise ou joindre un guide PDF du professeur (8 Mo maximum par fichier).</p>
+      {files && files.length > 0 && <p className="hint">📎 {files.length} fichier(s) sélectionné(s).</p>}
+      <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
+      <textarea id="question" rows={4} value={question} onChange={e => setQuestion(e.target.value)} placeholder="Ex. : Corrige cet exercice étape par étape et cherche d’abord dans les guides du professeur…" />
+      <button className="submitButton" disabled={busy || (!question.trim() && !(files && files.length > 0))}>{busy ? "Lecture de l’exercice et recherche du corrigé…" : "📷 Lire la photo et corriger l’exercice"}</button>
     </form>
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer"><h2>Corrigé et explication</h2><div className="answerText">{result.answer}</div><h3>Sources retrouvées</h3>{result.sources.length ? result.sources.map((s,i)=><details key={`${s.filename}-${s.page}-${i}`}><summary>{s.filename} · page {s.page} · pertinence {s.score.toFixed(2)}</summary><p>{s.text}</p></details>) : <p>Aucun passage suffisamment pertinent n'a été trouvé dans les guides fournis.</p>}</section>}
