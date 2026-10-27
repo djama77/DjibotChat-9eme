@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DjibotChat — 9e année",
-  description: "Assistant pédagogique pour les élèves de 9e année à Djibouti, avec sources issues des guides du professeur.",
+  title: "DjibotChat 9ème — Réussir mon BEF | Djibouti",
+  description: "Assistant scolaire pour les élèves de 9ème année à Djibouti : comprendre les cours, corriger les exercices et préparer le BEF.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
