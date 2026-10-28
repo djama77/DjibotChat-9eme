@@ -122,10 +122,10 @@ def _context(question: str, passages: list[dict]) -> str:
     )
 
 
-def ask_gemini(question: str, passages: list[dict], api_key: str, model: str = "gemini-2.5-flash") -> str:
-    """Generate an answer grounded in guide excerpts using the Gemini REST API."""
+def ask_gpt_oss(question: str, passages: list[dict], api_key: str, model: str = "openai/gpt-oss-20b") -> str:
+    """Generate a French answer using GPT-OSS through the Vercel AI Gateway."""
     if not api_key.strip():
-        raise ValueError("Clé API Gemini manquante. Ajoutez GEMINI_API_KEY dans les secrets ou la variable d’environnement.")
+        raise ValueError("Clé Vercel AI Gateway manquante. Configurez AI_GATEWAY_API_KEY dans les secrets ou les variables d’environnement.")
     prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
 Réponds en français, avec une explication simple, progressive et adaptée au collège.
 PRIORITÉ ABSOLUE : les guides du professeur fournis ci-dessous sont la référence.
@@ -139,23 +139,28 @@ Question/exercice de l'élève :
 EXTRAITS RETROUVÉS DANS LES GUIDES :
 {_context(question, passages)}
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     response = requests.post(
-        url,
-        params={"key": api_key.strip()},
-        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}},
+        "https://ai-gateway.vercel.sh/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key.strip()}", "Content-Type": "application/json"},
+        json={
+            "model": model.strip() or "openai/gpt-oss-20b",
+            "messages": [
+                {"role": "system", "content": "Tu es un assistant pédagogique fiable. Réponds en français et fonde tes réponses sur les sources fournies."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 1800,
+        },
         timeout=120,
     )
     if not response.ok:
         detail = response.text[:500]
-        raise RuntimeError(f"Erreur Gemini ({response.status_code}) : {detail}")
+        raise RuntimeError(f"Erreur Vercel AI Gateway ({response.status_code}) : {detail}")
     data = response.json()
-    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-    answer = "\n".join(part.get("text", "") for part in parts).strip()
-    if not answer:
-        raise RuntimeError("Gemini n’a renvoyé aucune réponse exploitable.")
-    return answer
-
+    answer = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+    if not isinstance(answer, str) or not answer.strip():
+        raise RuntimeError("GPT-OSS-20B n’a renvoyé aucune réponse exploitable.")
+    return answer.strip()
 
 def ask_ollama(question: str, passages: list[dict], model: str = "qwen2.5:3b", base_url: str = "http://localhost:11434") -> str:
     """Generate a French answer grounded in retrieved guide excerpts using local Ollama."""
