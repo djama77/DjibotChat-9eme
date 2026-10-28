@@ -8,7 +8,7 @@ Application Streamlit pour aider les élèves à travailler sur des exercices de
 - Chargement des PDF présents à la racine du dépôt et dans `data/guides_professeurs/` lors de l'indexation.
 - Import d'une photo JPG/PNG et OCR local via Tesseract.
 - Recherche textuelle des passages les plus proches, avec préférence pour le nom du fichier correspondant à la matière sélectionnée.
-- Réponse par Gemini API, Ollama local ou affichage des extraits sans IA.
+- Réponse par GPT-OSS-20B via Vercel AI Gateway, Ollama local ou affichage des extraits sans IA.
 - Instruction explicite de signaler quand aucun corrigé suffisamment pertinent n'a été retrouvé au lieu d'inventer une correction officielle.
 
 ## Matières visées
@@ -29,14 +29,14 @@ streamlit run app.py
 
 Installez également Tesseract OCR avec les langues française et anglaise pour la reconnaissance des photos.
 
-## Utiliser Gemini
+## Utiliser GPT-OSS-20B via Vercel AI Gateway
 
-1. Créez une clé dans [Google AI Studio](https://aistudio.google.com/apikey).
-2. En local, définissez la variable d'environnement `GEMINI_API_KEY` ou saisissez la clé dans le panneau latéral de l'application.
-3. Sur Streamlit Community Cloud, ajoutez `GEMINI_API_KEY = "votre_clé"` dans les paramètres **Secrets** de l'application.
+1. Créez une clé dans le tableau de bord Vercel AI Gateway.
+2. En local, définissez la variable d'environnement `AI_GATEWAY_API_KEY` ou saisissez la clé dans le panneau latéral de l'application.
+3. Sur Streamlit Community Cloud, ajoutez `AI_GATEWAY_API_KEY = "votre_clé"` dans les paramètres **Secrets** de l'application.
 4. Ne mettez jamais la clé API dans un fichier versionné sur GitHub.
 
-Modèle par défaut : `gemini-2.5-flash`. Vous pouvez le changer dans l'interface si votre compte donne accès à un autre modèle.
+Modèle par défaut : `openai/gpt-oss-20b`. Le modèle est appelé par l'API compatible OpenAI de Vercel AI Gateway. L'utilisation peut être facturée selon les tarifs en vigueur.
 
 ## Utiliser Ollama localement (option alternative)
 
@@ -61,5 +61,5 @@ Les guides peuvent être importés depuis l'interface, ajoutés à la racine du 
 ## Structure
 
 - `app.py` : interface Streamlit.
-- `app/core.py` : extraction PDF, OCR, recherche et appels Gemini/Ollama.
+- `app/core.py` : extraction PDF, OCR, recherche et appels GPT-OSS/Ollama.
 - `data/guides_professeurs/` : emplacement facultatif des guides PDF locaux.
