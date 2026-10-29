@@ -70,7 +70,7 @@ export default function Home() {
       <div className="annalesList">
         {(["2025", "2024"] as const).map(year => <div className="annaleYear" key={year}>
           <h3>BEF {year}</h3>
-          <ul>{CRIPEN_ANNales.filter(item => item.year === year).map(item => <li key={item.url}><a href={item.url} target="_blank" rel="noreferrer">{item.subject} — {item.kind} : {item.title}</a></li>)}</ul>
+          <ul>{CRIPEN_ANNales.filter(item => item.year === year).map(item => <li key={item.url}><a href={item.url} target="_blank" rel="noreferrer">{item.subjects.join(" / ")} — {item.kind} : {item.title}</a></li>)}</ul>
         </div>)}
       </div>
       <p className="annalesOfficialLink"><a href={CRIPEN_ANNALES_PAGE} target="_blank" rel="noreferrer">Ouvrir toutes les annales sur le site officiel du CRIPEN ↗</a></p>
