@@ -110,7 +110,7 @@ export async function POST(request: Request) {
 
     // To keep requests fast and focused, official CRIPEN annales are loaded for a selected subject and session.
     const selectedAnnales = subject !== "Toutes les matières"
-      ? CRIPEN_ANNales.filter(item => item.subject === subject && (examYear === "Toutes les sessions" || item.year === examYear))
+      ? CRIPEN_ANNales.filter(item => item.subjects.includes(subject as "Mathématiques" | "SVT" | "Physique-Chimie" | "Français") && (examYear === "Toutes les sessions" || item.year === examYear))
       : [];
     const annaleResults = await Promise.allSettled(selectedAnnales.map(loadAnnale));
     for (const result of annaleResults) if (result.status === "fulfilled") docs.push(...result.value);
