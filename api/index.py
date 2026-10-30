@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.core import extract_pdf_pages, find_relevant_passages, ask_openrouter, draft_grounded_answer
@@ -18,6 +19,13 @@ class ExerciseRequest(BaseModel):
     subject: str = "Toutes les matières"
     use_ai: bool = True
 
+@app.get("/", include_in_schema=False)
+def home():
+    page = ROOT / "public" / "index.html"
+    if not page.is_file():
+        raise HTTPException(status_code=404, detail="Interface web introuvable.")
+    return FileResponse(page, media_type="text/html; charset=utf-8")
+
 @lru_cache(maxsize=1)
 def load_repository_guides():
     documents = []
@@ -26,7 +34,6 @@ def load_repository_guides():
         try:
             documents.extend(extract_pdf_pages(path.read_bytes(), path.name))
         except Exception:
-            # One malformed PDF must not prevent the other guides from loading.
             continue
     return documents
 
