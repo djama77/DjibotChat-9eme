@@ -4,7 +4,7 @@ from pathlib import Path
 import streamlit as st
 from PIL import Image
 
-from app.core import extract_pdf_pages, ocr_image, find_relevant_passages, draft_grounded_answer, ask_ollama, ask_gemini
+from app.core import extract_pdf_pages, ocr_image, find_relevant_passages, draft_grounded_answer, ask_ollama, ask_deepseek
 
 st.set_page_config(page_title="Chatbot CRIPEN — 9e année", page_icon="📚", layout="wide")
 st.title("📚 DjibotChat — assistant scolaire CRIPEN, 9e année")
@@ -27,10 +27,10 @@ with st.sidebar:
     subject = st.selectbox("Matière de l’exercice", SUBJECTS)
     st.caption("Les PDF présents à la racine du dépôt et dans data/guides_professeurs/ sont également chargés automatiquement.")
     st.header("2. Moteur IA")
-    engine = st.radio("Choisir le moteur", ["Gemini API", "Ollama local", "Sans IA (extraits seulement)"], index=0)
-    if engine == "Gemini API":
-        api_key = st.text_input("Clé API Gemini", value=get_secret("GEMINI_API_KEY"), type="password", help="La clé est lue depuis GEMINI_API_KEY si elle est configurée dans les secrets.")
-        model = st.text_input("Modèle Gemini", value="gemini-2.5-flash")
+    engine = st.radio("Choisir le moteur", ["DeepSeek API", "Ollama local", "Sans IA (extraits seulement)"], index=0)
+    if engine == "DeepSeek API":
+        api_key = st.text_input("Clé API DeepSeek", value=get_secret("DEEPSEEK_API_KEY"), type="password", help="La clé est lue depuis DEEPSEEK_API_KEY si elle est configurée dans les secrets.")
+        model = st.text_input("Modèle DeepSeek", value="deepseek-chat")
         st.caption("Ne publiez jamais votre clé API dans le code ou dans GitHub.")
     elif engine == "Ollama local":
         ollama_model = st.text_input("Modèle Ollama", value="qwen2.5:3b")
@@ -98,11 +98,11 @@ if st.button("Rechercher dans les guides et proposer le corrigé", type="primary
     else:
         passages = find_relevant_passages(question.strip(), st.session_state.docs, subject)
         st.markdown("### Corrigé et explication")
-        if engine == "Gemini API":
+        if engine == "DeepSeek API":
             try:
-                st.markdown(ask_gemini(question.strip(), passages, api_key, model=model.strip()))
+                st.markdown(ask_deepseek(question.strip(), passages, api_key, model=model.strip()))
             except Exception as exc:
-                st.error(f"Impossible de générer avec Gemini : {exc}")
+                st.error(f"Impossible de générer avec DeepSeek : {exc}")
                 st.markdown(draft_grounded_answer(question.strip(), passages))
         elif engine == "Ollama local":
             try:
