@@ -30,7 +30,7 @@ with st.sidebar:
     engine = st.radio("Choisir le moteur", ["DeepSeek API", "Ollama local", "Sans IA (extraits seulement)"], index=0)
     if engine == "DeepSeek API":
         api_key = st.text_input("Clé API DeepSeek", value=get_secret("DEEPSEEK_API_KEY"), type="password", help="La clé est lue depuis DEEPSEEK_API_KEY si elle est configurée dans les secrets.")
-        model = st.text_input("Modèle DeepSeek", value="deepseek-chat")
+        model = st.text_input("Modèle DeepSeek", value="deepseek-v4-flash")
         st.caption("Ne publiez jamais votre clé API dans le code ou dans GitHub.")
     elif engine == "Ollama local":
         ollama_model = st.text_input("Modèle Ollama", value="qwen2.5:3b")
