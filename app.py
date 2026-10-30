@@ -30,7 +30,7 @@ with st.sidebar:
     engine = st.radio("Choisir le moteur", ["OpenRouter (gratuit)", "Ollama local", "Sans IA (extraits seulement)"], index=0)
     if engine == "OpenRouter (gratuit)":
         api_key = st.text_input("Clé API OpenRouter", value=get_secret("OPENROUTER_API_KEY"), type="password", help="La clé est lue depuis OPENROUTER_API_KEY si elle est configurée dans les secrets.")
-        model = st.text_input("Modèle OpenRouter", value="openrouter/free", help="Le routeur openrouter/free sélectionne parmi les modèles gratuits compatibles.")
+        st.caption("Modèle verrouillé : openrouter/free (routeur gratuit uniquement).")
         st.caption("Le routeur gratuit peut être limité ou temporairement indisponible. Aucun modèle payant n’est configuré en secours. Ne publiez jamais votre clé API.")
     elif engine == "Ollama local":
         ollama_model = st.text_input("Modèle Ollama", value="qwen2.5:3b")
@@ -100,7 +100,7 @@ if st.button("Rechercher dans les guides et proposer le corrigé", type="primary
         st.markdown("### Corrigé et explication")
         if engine == "OpenRouter (gratuit)":
             try:
-                st.markdown(ask_openrouter(question.strip(), passages, api_key, model=model.strip()))
+                st.markdown(ask_openrouter(question.strip(), passages, api_key))
             except Exception as exc:
                 st.error(f"Impossible de générer avec OpenRouter : {exc}")
                 st.markdown(draft_grounded_answer(question.strip(), passages))
