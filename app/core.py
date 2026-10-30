@@ -122,7 +122,7 @@ def _context(question: str, passages: list[dict]) -> str:
     )
 
 
-def ask_openrouter(question: str, passages: list[dict], api_key: str, model: str = "openrouter/free") -> str:
+def ask_openrouter(question: str, passages: list[dict], api_key: str) -> str:
     """Generate a French, guide-grounded answer using OpenRouter free-model router."""
     if not api_key.strip():
         raise ValueError("Clé API OpenRouter manquante. Ajoutez OPENROUTER_API_KEY dans les secrets ou variables d’environnement.")
@@ -148,7 +148,7 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
             "X-Title": "DjibotChat 9e année",
         },
         json={
-            "model": model.strip() or "openrouter/free",
+            "model": "openrouter/free",
             "messages": [
                 {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N’invente jamais de sources ou de pages."},
                 {"role": "user", "content": prompt},
