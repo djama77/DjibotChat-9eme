@@ -157,6 +157,48 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
     return answer
 
 
+def ask_deepseek(question: str, passages: list[dict], api_key: str, model: str = "deepseek-chat") -> str:
+    """Generate a French answer grounded in guide excerpts using the DeepSeek OpenAI-compatible API."""
+    if not api_key.strip():
+        raise ValueError("Clé API DeepSeek manquante. Ajoutez DEEPSEEK_API_KEY dans les secrets Streamlit ou les variables d’environnement.")
+    prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
+Réponds en français, avec une explication simple, progressive et adaptée au collège.
+PRIORITÉ ABSOLUE : les guides du professeur fournis ci-dessous sont la référence.
+Ne présente jamais une réponse générée comme un corrigé officiel si les extraits ne contiennent pas la correction correspondante.
+Si aucun extrait ne correspond assez clairement, écris exactement « CORRIGÉ OFFICIEL INTROUVABLE DANS LES GUIDES FOURNIS », puis propose éventuellement une piste de méthode clairement étiquetée « Explication générale (non vérifiée dans le guide) ».
+Distingue toujours : 1) corrigé retrouvé dans le guide, 2) explication pédagogique reformulée, 3) éléments non vérifiés.
+Pour les calculs, montre les étapes. N’invente jamais de nom de guide, de chapitre ou de page. Cite chaque source sous la forme [nom du fichier, page PDF N].
+Question/exercice de l'élève :
+{question}
+
+EXTRAITS RETROUVÉS DANS LES GUIDES :
+{_context(question, passages)}
+"""
+    response = requests.post(
+        "https://api.deepseek.com/chat/completions",
+        headers={"Authorization": f"Bearer {api_key.strip()}", "Content-Type": "application/json"},
+        json={
+            "model": model.strip() or "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N'invente jamais de sources ou de pages."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2,
+            "stream": False
+        },
+        timeout=120,
+    )
+    if not response.ok:
+        detail = response.text[:500]
+        raise RuntimeError(f"Erreur DeepSeek ({response.status_code}) : {detail}")
+    data = response.json()
+    choices = data.get("choices", [])
+    answer = choices[0].get("message", {}).get("content", "").strip() if choices else ""
+    if not answer:
+        raise RuntimeError("DeepSeek n’a renvoyé aucune réponse exploitable.")
+    return answer
+
+
 def ask_ollama(question: str, passages: list[dict], model: str = "qwen2.5:3b", base_url: str = "http://localhost:11434") -> str:
     """Generate a French answer grounded in retrieved guide excerpts using local Ollama."""
     prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
