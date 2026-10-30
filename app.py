@@ -4,7 +4,7 @@ from pathlib import Path
 import streamlit as st
 from PIL import Image
 
-from app.core import extract_pdf_pages, ocr_image, find_relevant_passages, draft_grounded_answer, ask_ollama, ask_deepseek
+from app.core import extract_pdf_pages, ocr_image, find_relevant_passages, draft_grounded_answer, ask_ollama, ask_openrouter
 
 st.set_page_config(page_title="Chatbot CRIPEN — 9e année", page_icon="📚", layout="wide")
 st.title("📚 DjibotChat — assistant scolaire CRIPEN, 9e année")
@@ -27,11 +27,11 @@ with st.sidebar:
     subject = st.selectbox("Matière de l’exercice", SUBJECTS)
     st.caption("Les PDF présents à la racine du dépôt et dans data/guides_professeurs/ sont également chargés automatiquement.")
     st.header("2. Moteur IA")
-    engine = st.radio("Choisir le moteur", ["DeepSeek API", "Ollama local", "Sans IA (extraits seulement)"], index=0)
-    if engine == "DeepSeek API":
-        api_key = st.text_input("Clé API DeepSeek", value=get_secret("DEEPSEEK_API_KEY"), type="password", help="La clé est lue depuis DEEPSEEK_API_KEY si elle est configurée dans les secrets.")
-        model = st.text_input("Modèle DeepSeek", value="deepseek-v4-flash")
-        st.caption("Ne publiez jamais votre clé API dans le code ou dans GitHub.")
+    engine = st.radio("Choisir le moteur", ["OpenRouter (gratuit)", "Ollama local", "Sans IA (extraits seulement)"], index=0)
+    if engine == "OpenRouter (gratuit)":
+        api_key = st.text_input("Clé API OpenRouter", value=get_secret("OPENROUTER_API_KEY"), type="password", help="La clé est lue depuis OPENROUTER_API_KEY si elle est configurée dans les secrets.")
+        model = st.text_input("Modèle OpenRouter", value="openrouter/free", help="Le routeur openrouter/free sélectionne parmi les modèles gratuits compatibles.")
+        st.caption("Le routeur gratuit peut être limité ou temporairement indisponible. Aucun modèle payant n’est configuré en secours. Ne publiez jamais votre clé API.")
     elif engine == "Ollama local":
         ollama_model = st.text_input("Modèle Ollama", value="qwen2.5:3b")
         ollama_url = st.text_input("Adresse Ollama", value="http://localhost:11434")
@@ -98,11 +98,11 @@ if st.button("Rechercher dans les guides et proposer le corrigé", type="primary
     else:
         passages = find_relevant_passages(question.strip(), st.session_state.docs, subject)
         st.markdown("### Corrigé et explication")
-        if engine == "DeepSeek API":
+        if engine == "OpenRouter (gratuit)":
             try:
-                st.markdown(ask_deepseek(question.strip(), passages, api_key, model=model.strip()))
+                st.markdown(ask_openrouter(question.strip(), passages, api_key, model=model.strip()))
             except Exception as exc:
-                st.error(f"Impossible de générer avec DeepSeek : {exc}")
+                st.error(f"Impossible de générer avec OpenRouter : {exc}")
                 st.markdown(draft_grounded_answer(question.strip(), passages))
         elif engine == "Ollama local":
             try:
