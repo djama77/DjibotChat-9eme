@@ -71,7 +71,9 @@ if st.button("Indexer / recharger les guides PDF", type="primary"):
         st.info("Les pages numérisées sans texte intégré ne sont pas encore indexées par OCR. Si un guide semble absent, vérifiez qu’il contient du texte sélectionnable.")
 
 st.subheader("B. Photographier ou saisir l’exercice")
-photo = st.file_uploader("Importer une photo (JPG, JPEG ou PNG)", type=["jpg", "jpeg", "png"], key="exercise_photo")
+camera_photo = st.camera_input("Prendre une photo avec la caméra")
+uploaded_photo = st.file_uploader("Ou choisir une photo depuis la galerie", type=["jpg", "jpeg", "png"], key="exercise_photo")
+photo = camera_photo or uploaded_photo
 if photo:
     image = Image.open(photo).convert("RGB")
     st.image(image, caption="Photo de l’exercice", width=480)
