@@ -10,7 +10,7 @@ from PIL import Image
 
 
 def clean(text: str) -> str:
-    return re.sub(r"\\s+", " ", text or "").strip()
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
 def extract_pdf_pages(file_bytes: bytes, filename: str) -> list[dict[str, Any]]:
