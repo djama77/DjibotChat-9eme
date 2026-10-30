@@ -157,7 +157,7 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
     return answer
 
 
-def ask_deepseek(question: str, passages: list[dict], api_key: str, model: str = "deepseek-chat") -> str:
+def ask_deepseek(question: str, passages: list[dict], api_key: str, model: str = "deepseek-v4-flash") -> str:
     """Generate a French answer grounded in guide excerpts using the DeepSeek OpenAI-compatible API."""
     if not api_key.strip():
         raise ValueError("Clé API DeepSeek manquante. Ajoutez DEEPSEEK_API_KEY dans les secrets Streamlit ou les variables d’environnement.")
@@ -178,7 +178,7 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
         "https://api.deepseek.com/chat/completions",
         headers={"Authorization": f"Bearer {api_key.strip()}", "Content-Type": "application/json"},
         json={
-            "model": model.strip() or "deepseek-chat",
+            "model": model.strip() or "deepseek-v4-flash",
             "messages": [
                 {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N'invente jamais de sources ou de pages."},
                 {"role": "user", "content": prompt}
