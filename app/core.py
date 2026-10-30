@@ -122,10 +122,10 @@ def _context(question: str, passages: list[dict]) -> str:
     )
 
 
-def ask_gemini(question: str, passages: list[dict], api_key: str, model: str = "gemini-2.5-flash") -> str:
-    """Generate an answer grounded in guide excerpts using the Gemini REST API."""
+def ask_openrouter(question: str, passages: list[dict], api_key: str, model: str = "openrouter/free") -> str:
+    """Generate a French, guide-grounded answer using OpenRouter free-model router."""
     if not api_key.strip():
-        raise ValueError("Clé API Gemini manquante. Ajoutez GEMINI_API_KEY dans les secrets ou la variable d’environnement.")
+        raise ValueError("Clé API OpenRouter manquante. Ajoutez OPENROUTER_API_KEY dans les secrets ou variables d’environnement.")
     prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
 Réponds en français, avec une explication simple, progressive et adaptée au collège.
 PRIORITÉ ABSOLUE : les guides du professeur fournis ci-dessous sont la référence.
@@ -133,71 +133,42 @@ Ne présente jamais une réponse générée comme un corrigé officiel si les ex
 Si aucun extrait ne correspond assez clairement, écris exactement « CORRIGÉ OFFICIEL INTROUVABLE DANS LES GUIDES FOURNIS », puis propose éventuellement une piste de méthode clairement étiquetée « Explication générale (non vérifiée dans le guide) ».
 Distingue toujours : 1) corrigé retrouvé dans le guide, 2) explication pédagogique reformulée, 3) éléments non vérifiés.
 Pour les calculs, montre les étapes. N’invente jamais de nom de guide, de chapitre ou de page. Cite chaque source sous la forme [nom du fichier, page PDF N].
-Question/exercice de l'élève :
-{question}
-
-EXTRAITS RETROUVÉS DANS LES GUIDES :
-{_context(question, passages)}
-"""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    response = requests.post(
-        url,
-        params={"key": api_key.strip()},
-        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}},
-        timeout=120,
-    )
-    if not response.ok:
-        detail = response.text[:500]
-        raise RuntimeError(f"Erreur Gemini ({response.status_code}) : {detail}")
-    data = response.json()
-    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-    answer = "\n".join(part.get("text", "") for part in parts).strip()
-    if not answer:
-        raise RuntimeError("Gemini n’a renvoyé aucune réponse exploitable.")
-    return answer
-
-
-def ask_deepseek(question: str, passages: list[dict], api_key: str, model: str = "deepseek-v4-flash") -> str:
-    """Generate a French answer grounded in guide excerpts using the DeepSeek OpenAI-compatible API."""
-    if not api_key.strip():
-        raise ValueError("Clé API DeepSeek manquante. Ajoutez DEEPSEEK_API_KEY dans les secrets Streamlit ou les variables d’environnement.")
-    prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
-Réponds en français, avec une explication simple, progressive et adaptée au collège.
-PRIORITÉ ABSOLUE : les guides du professeur fournis ci-dessous sont la référence.
-Ne présente jamais une réponse générée comme un corrigé officiel si les extraits ne contiennent pas la correction correspondante.
-Si aucun extrait ne correspond assez clairement, écris exactement « CORRIGÉ OFFICIEL INTROUVABLE DANS LES GUIDES FOURNIS », puis propose éventuellement une piste de méthode clairement étiquetée « Explication générale (non vérifiée dans le guide) ».
-Distingue toujours : 1) corrigé retrouvé dans le guide, 2) explication pédagogique reformulée, 3) éléments non vérifiés.
-Pour les calculs, montre les étapes. N’invente jamais de nom de guide, de chapitre ou de page. Cite chaque source sous la forme [nom du fichier, page PDF N].
-Question/exercice de l'élève :
+Question/exercice de l’élève :
 {question}
 
 EXTRAITS RETROUVÉS DANS LES GUIDES :
 {_context(question, passages)}
 """
     response = requests.post(
-        "https://api.deepseek.com/chat/completions",
-        headers={"Authorization": f"Bearer {api_key.strip()}", "Content-Type": "application/json"},
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key.strip()}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://djibotchat-9eme.vercel.app",
+            "X-Title": "DjibotChat 9e année",
+        },
         json={
-            "model": model.strip() or "deepseek-v4-flash",
+            "model": model.strip() or "openrouter/free",
             "messages": [
-                {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N'invente jamais de sources ou de pages."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N’invente jamais de sources ou de pages."},
+                {"role": "user", "content": prompt},
             ],
             "temperature": 0.2,
-            "stream": False
+            "stream": False,
         },
         timeout=120,
     )
     if not response.ok:
-        detail = response.text[:500]
-        raise RuntimeError(f"Erreur DeepSeek ({response.status_code}) : {detail}")
+        raise RuntimeError(f"Erreur OpenRouter ({response.status_code}) : {response.text[:500]}")
     data = response.json()
     choices = data.get("choices", [])
     answer = choices[0].get("message", {}).get("content", "").strip() if choices else ""
     if not answer:
-        raise RuntimeError("DeepSeek n’a renvoyé aucune réponse exploitable.")
+        raise RuntimeError("OpenRouter n’a renvoyé aucune réponse exploitable.")
+    selected_model = data.get("model")
+    if selected_model:
+        answer += f"\n\nModèle utilisé : {selected_model}"
     return answer
-
 
 def ask_ollama(question: str, passages: list[dict], model: str = "qwen2.5:3b", base_url: str = "http://localhost:11434") -> str:
     """Generate a French answer grounded in retrieved guide excerpts using local Ollama."""
