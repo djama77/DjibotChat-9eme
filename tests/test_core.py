@@ -26,3 +26,19 @@ def test_search_returns_matching_source_and_page():
 def test_search_ignores_empty_pages():
     docs = [{"filename": "scan.pdf", "page": 1, "text": ""}]
     assert find_relevant_passages("question", docs) == []
+
+
+def test_search_does_not_match_generic_words_when_subject_is_selected():
+    docs = [
+        {
+            "filename": "guide_svt.pdf",
+            "page": 114,
+            "text": "Le document présente le rôle des hormones et les mécanismes de la contraception.",
+        }
+    ]
+    results = find_relevant_passages(
+        "Définir la photosynthèse et expliquer son rôle chez les plantes.",
+        docs,
+        "SVT",
+    )
+    assert results == []

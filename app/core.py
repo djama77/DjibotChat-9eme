@@ -60,6 +60,7 @@ def tokens(text: str) -> list[str]:
         "qui que quoi comment pourquoi exercice question calculer déterminer montrer donner "
         "soit si alors ce cette ces son sa ses leur leurs on nous vous ils elles il elle être "
         "avoir faire plus moins comme mais donc où quel quelle quels quelles the an and or is "
+        "définir explique expliquer rôle roles chez pourquoi comment exercice question "
         "of in to with what how why".split()
     )
     return [token for token in re.findall(r"[a-zA-ZÀ-ÿ0-9]+", text.lower()) if len(token) > 1 and token not in stop]
@@ -93,12 +94,13 @@ def find_relevant_passages(question: str, docs: list[dict], subject: str = "Tout
             "Histoire-Géographie": ("histoire", "geo", "géographie", "geographie"),
             "Informatique": ("info", "informatique"),
         }
-        if subject != "Toutes les matières":
+        # A subject preference must never make an unrelated passage look relevant.
+        if common and subject != "Toutes les matières":
             if any(word in filename for word in subject_map.get(subject, ())):
                 score += 0.25
             elif set(tokens(subject)).intersection(document_tokens):
                 score += 0.05
-        if score >= 0.08:
+        if common and score >= 0.15:
             candidates.append({**document, "score": score})
     candidates.sort(key=lambda item: item["score"], reverse=True)
     results, seen = [], set()
