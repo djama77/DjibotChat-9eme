@@ -61,14 +61,21 @@ export default function Home() {
     try {
       const selectedFiles = Array.from(files ?? []);
       if (selectedFiles.length > 8) throw new Error("Ajoute au maximum 8 fichiers à la fois.");
+      const allowedExtensions = /\\.(jpe?g|png|webp|pdf|docx?)$/i;
+      const invalidFile = selectedFiles.find((file) => !allowedExtensions.test(file.name));
+      if (invalidFile) {
+        throw new Error("Format non pris en charge : " + invalidFile.name + ". Choisis une photo JPG/PNG/WEBP, un PDF ou un document Word DOC/DOCX.");
+      }
+      const oversizedFile = selectedFiles.find((file) => file.size > 8 * 1024 * 1024);
+      if (oversizedFile) throw new Error("Le fichier " + oversizedFile.name + " dépasse 8 Mo.");
 
-      const photos = selectedFiles.filter((file) => file.type.startsWith("image/"));
-      const documents = selectedFiles.filter((file) => !file.type.startsWith("image/"));
+      const photos = selectedFiles.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name));
+      const documents = selectedFiles.filter((file) => !(file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)));
       let recognizedExercise = "";
 
       if (photos.length) {
         const supported = ["image/jpeg", "image/png", "image/webp"];
-        const unsupported = photos.find((file) => !supported.includes(file.type));
+        const unsupported = photos.find((file) => file.type && !supported.includes(file.type));
         if (unsupported) {
           throw new Error("Format photo non pris en charge : " + unsupported.type + ". Utilise JPG, PNG ou WEBP.");
         }
@@ -162,9 +169,10 @@ export default function Home() {
       <select id="mode" value={mode} onChange={(event) => setMode(event.target.value as PedagogyMode)}>{Object.entries(PEDAGOGY_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📸 Photo de l'exercice, guide PDF ou document Word</label>
-      <input id="guides" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
-      <p className="hint">Sur Android, choisis une photo dans la Galerie ou prends une photo avec l'appareil. L'OCR est effectué dans le navigateur : seul le texte reconnu est transmis au service de réponse, pas la photo. Relis le texte OCR, surtout les nombres et les formules. Formats : JPG, PNG, WEBP, PDF, DOC ou DOCX ; 8 Mo maximum par fichier.</p>
-      {files && files.length > 0 && <p className="hint">📎 {files.length} fichier(s) sélectionné(s).</p>}
+      <input id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
+      <label className="filePickerButton" htmlFor="guides">📎 Choisir des fichiers</label>
+      <p className="hint">Tu peux ajouter des photos d'exercices, des fichiers PDF et des documents Word (DOC ou DOCX), seuls ou ensemble. Sur Android, sélectionne Galerie, Photos ou Fichiers selon le type de document. Les photos sont lues par OCR ; le texte des PDF et Word est extrait automatiquement. Maximum 8 fichiers de 8 Mo chacun.</p>
+      {files && files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) :</strong><ul>{Array.from(files).map((file, index) => <li key={index}>{file.name}</li>)}</ul></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
       <button className="submitButton" disabled={busy || (!question.trim() && !(files && files.length > 0))}>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
