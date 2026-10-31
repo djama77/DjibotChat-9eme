@@ -23,6 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --experimental-strip-types --test lib/retrieval.test.ts
+      - run: node --experimental-strip-types --test lib/retrieval.test.ts lib/pedagogy.test.ts
       - run: npm install --no-package-lock --no-audit --no-fund
       - run: npm run build
