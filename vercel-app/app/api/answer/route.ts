@@ -216,6 +216,17 @@ export async function POST(request: Request) {
         }).join("\n\n")
       : "[Aucun extrait suffisamment pertinent retrouvé dans les guides et annales sélectionnés.]";
 
+    // Do not ask a free model to invent a correction when retrieval found no usable source.
+    // This is especially important for subjects that are not yet indexed in the repository.
+    if (mode === "corrige" && scored.length === 0) {
+      return NextResponse.json({
+        answer: "Aucun passage suffisamment pertinent n’a été retrouvé dans les documents disponibles. Je ne vais pas inventer un corrigé. Vérifie la matière et la session, reformule l’énoncé ou joins le guide/corrigé officiel correspondant.",
+        sources: [],
+        warning: [...guideLoadWarnings, ...annaleLoadWarnings, "Aucune source documentaire exploitable pour cette question."].join(" "),
+        model: "Recherche documentaire — aucun appel IA effectué",
+      });
+    }
+
     const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
