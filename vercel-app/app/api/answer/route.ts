@@ -116,14 +116,6 @@ async function loadAnnale(resource: AnnaleResource): Promise<DocChunk[]> {
 
 export async function POST(request: Request) {
   try {
-    const key = process.env.DEEPSEEK_API_KEY?.trim();
-    if (!key) {
-      return NextResponse.json(
-        { error: "DEEPSEEK_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
-        { status: 503 },
-      );
-    }
-
     const form = await request.formData();
     const question = String(form.get("question") ?? "").trim();
     const subject = String(form.get("subject") ?? "Toutes les matières");
@@ -225,6 +217,14 @@ export async function POST(request: Request) {
         warning: [...guideLoadWarnings, ...annaleLoadWarnings, "Aucune source documentaire exploitable pour cette question."].join(" "),
         model: "Recherche documentaire — aucun appel IA effectué",
       });
+    }
+
+    const key = process.env.DEEPSEEK_API_KEY?.trim();
+    if (!key) {
+      return NextResponse.json(
+        { error: "DEEPSEEK_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
+        { status: 503 },
+      );
     }
 
     const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
