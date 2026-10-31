@@ -32,7 +32,8 @@ L'application utilise le modèle routeur openrouter/free. La disponibilité des 
 
 - Photo : Tesseract.js réalise l'OCR dans le navigateur. Le fichier photo n'est pas envoyé à l'API de réponse ; seul le texte reconnu est transmis. Vérifiez les nombres, signes et formules.
 - PDF et documents Word : extraction du texte côté serveur.
-- Recherche : classement BM25 avec priorité aux passages pertinents provenant d'une correction officielle CRIPEN.
+- Recherche : classement BM25 normalisé (accents), filtrage strict par matière et session, priorité modérée aux corrections officielles CRIPEN.
+- Pédagogie : six modes (corrigé sourcé, aide progressive, explication, quiz, diagnostic d'erreur, fiche de révision) ; les textes OCR et extraits sont transmis comme données non fiables séparées des consignes.
 - Sources : les sujets officiels sont identifiés séparément des corrections officielles.
 - Annales : catalogue CRIPEN BEF 2024–2025, selon les liens disponibles dans vercel-app/annales.ts.
 
@@ -60,7 +61,7 @@ Le script conserve les pages qui possèdent déjà une couche texte et ajoute l'
 La recherche BM25 possède des tests déterministes. Avec Node.js 22, depuis vercel-app/ :
 
 ```bash
-node --experimental-strip-types --test lib/retrieval.test.ts
+node --experimental-strip-types --test lib/retrieval.test.ts lib/pedagogy.test.ts
 npm install
 npm run build
 ```
