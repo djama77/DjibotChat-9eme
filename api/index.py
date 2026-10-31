@@ -3,6 +3,8 @@ from functools import lru_cache
 from pathlib import Path
 import os
 
+from requests.exceptions import Timeout
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -66,8 +68,14 @@ def answer(request: ExerciseRequest):
             raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY n'est pas configurée sur Vercel.")
         try:
             result = ask_openrouter(request.question, passages, key)
+            ai_status = "ok"
+        except Timeout:
+            result = draft_grounded_answer(request.question, passages)
+            result += "\n\n**Information :** le service IA a dépassé le délai d'attente. Cette réponse provisoire reprend les passages retrouvés dans les guides ; elle n'est pas un corrigé officiel confirmé."
+            ai_status = "timeout_fallback"
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"OpenRouter indisponible : {str(exc)[:300]}") from exc
     else:
         result = draft_grounded_answer(request.question, passages)
-    return {"answer": result, "passages": passages, "source_count": len(passages)}
+        ai_status = "disabled"
+    return {"answer": result, "passages": passages, "source_count": len(passages), "ai_status": ai_status}
