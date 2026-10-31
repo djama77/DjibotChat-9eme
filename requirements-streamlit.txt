@@ -1,0 +1,4 @@
+# Install with: pip install -r requirements-streamlit.txt
+-r requirements.txt
+streamlit>=1.36
+pytesseract>=0.3.10
