@@ -7,7 +7,7 @@ on:
       - ".github/workflows/vercel-app.yml"
   push:
     branches:
-      - vercel-deploy
+      - "**"
     paths:
       - "vercel-app/**"
       - ".github/workflows/vercel-app.yml"
