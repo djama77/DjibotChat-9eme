@@ -3,6 +3,7 @@ import pdf from "pdf-parse";
 import mammoth from "mammoth";
 import { CRIPEN_ANNales, type AnnaleResource } from "../../../annales";
 import { rankDocuments, type SearchDocument } from "../../../lib/retrieval";
+import { buildPedagogyMessages, PEDAGOGY_MODES, type PedagogyMode } from "../../../lib/pedagogy";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -127,6 +128,10 @@ export async function POST(request: Request) {
     const question = String(form.get("question") ?? "").trim();
     const subject = String(form.get("subject") ?? "Toutes les matières");
     const examYear = String(form.get("examYear") ?? "2025");
+    const rawMode = String(form.get("mode") ?? "corrige");
+    const mode = Object.hasOwn(PEDAGOGY_MODES, rawMode) ? rawMode as PedagogyMode : "corrige";
+    const studentAnswer = String(form.get("studentAnswer") ?? "").slice(0, 6000);
+    if (mode === "erreur" && !studentAnswer.trim()) return NextResponse.json({ error: "Ajoute ta réponse pour comprendre ton erreur." }, { status: 400 });
     const recognizedExercise = String(form.get("recognizedExercise") ?? "").trim().slice(0, 12000);
     const uploaded = form.getAll("guides").filter((value): value is File => value instanceof File && value.size > 0);
 
@@ -211,18 +216,7 @@ export async function POST(request: Request) {
         }).join("\n\n")
       : "[Aucun extrait suffisamment pertinent retrouvé dans les guides et annales sélectionnés.]";
 
-    const prompt =
-      "Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français clair, avec une explication progressive adaptée au collège.\n\n" +
-      "ORDRE OBLIGATOIRE DES SOURCES :\n" +
-      "1. Cherche d'abord une CORRECTION OFFICIELLE CRIPEN correspondant exactement à la matière, à la session et à l'exercice.\n" +
-      "2. Utilise ensuite le guide du professeur pour vérifier ou compléter.\n" +
-      "3. Un SUJET OFFICIEL contient l'énoncé : ce n'est jamais une correction.\n\n" +
-      "Si une correction officielle correspond clairement à l'exercice, restitue d'abord son contenu sans le déformer, puis ajoute une section « Explication pédagogique » qui détaille la méthode. Cite le titre du document et la page/segment fournis.\n" +
-      "Si aucune correction officielle correspondante n'est retrouvée, écris exactement « CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE » puis propose, si possible, une résolution indépendante sous le titre « Explication pédagogique non vérifiée par le CRIPEN ». Ne présente jamais une réponse générée comme officielle.\n" +
-      "Vérifie que le passage correspond bien à l'énoncé : la seule présence d'un document de correction dans les résultats ne prouve pas qu'il corrige cet exercice. N'invente jamais de source, de page ou de contenu illisible. Pour les calculs, montre les étapes.\n\n" +
-      "Matière : " + subject + "\nSession BEF : " + examYear + "\nQuestion : " + question +
-      "\nTexte reconnu sur la photo (OCR local) :\n" + (recognizedExercise || "[Aucun texte OCR fourni]") +
-      "\n\nEXTRAITS RETROUVÉS :\n" + context;
+    const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -234,10 +228,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         model: "openrouter/free",
-        messages: [
-          { role: "system", content: "Tu es un assistant scolaire rigoureux. Ne fabrique jamais de corrigé officiel ni de référence." },
-          { role: "user", content: prompt },
-        ],
+        messages,
         temperature: 0.2,
         stream: false,
       }),
