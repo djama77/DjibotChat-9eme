@@ -158,7 +158,7 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
             "temperature": 0.2,
             "stream": False,
         },
-        timeout=120,
+        timeout=(8, 35),
     )
     if not response.ok:
         raise RuntimeError(f"Erreur OpenRouter ({response.status_code}) : {response.text[:500]}")
