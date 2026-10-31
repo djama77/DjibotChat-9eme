@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CRIPEN_ANNales, CRIPEN_ANNALES_PAGE } from "../annales";
+import { PEDAGOGY_MODES, type PedagogyMode } from "../lib/pedagogy";
 
 type TesseractApi = {
   recognize: (image: Blob, language: string) => Promise<{ data: { text: string } }>;
@@ -44,6 +45,8 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [subject, setSubject] = useState(subjects[0]);
   const [examYear, setExamYear] = useState("2025");
+  const [mode, setMode] = useState<PedagogyMode>("corrige");
+  const [studentAnswer, setStudentAnswer] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -84,6 +87,8 @@ export default function Home() {
       data.set("question", question);
       data.set("subject", subject);
       data.set("examYear", examYear);
+      data.set("mode", mode);
+      data.set("studentAnswer", studentAnswer);
       data.set("recognizedExercise", recognizedExercise);
       documents.forEach((file) => data.append("guides", file));
 
@@ -152,6 +157,9 @@ export default function Home() {
         <option value="Toutes les sessions">Toutes les sessions (2024–2025)</option>
       </select>
       <p className="hint">Pour rechercher dans les annales du CRIPEN, sélectionne une matière précise : Mathématiques, SVT, Physique-Chimie ou Français.</p>
+      <label htmlFor="mode">Mode de travail</label>
+      <select id="mode" value={mode} onChange={(event) => setMode(event.target.value as PedagogyMode)}>{Object.entries(PEDAGOGY_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+      {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📸 Photo de l'exercice, guide PDF ou document Word</label>
       <input id="guides" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
       <p className="hint">Sur Android, choisis une photo dans la Galerie ou prends une photo avec l'appareil. L'OCR est effectué dans le navigateur : seul le texte reconnu est transmis au service de réponse, pas la photo. Relis le texte OCR, surtout les nombres et les formules. Formats : JPG, PNG, WEBP, PDF, DOC ou DOCX ; 8 Mo maximum par fichier.</p>
