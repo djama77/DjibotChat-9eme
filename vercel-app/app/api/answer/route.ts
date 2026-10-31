@@ -116,14 +116,6 @@ async function loadAnnale(resource: AnnaleResource): Promise<DocChunk[]> {
 
 export async function POST(request: Request) {
   try {
-    const key = process.env.OPENROUTER_API_KEY?.trim();
-    if (!key) {
-      return NextResponse.json(
-        { error: "OPENROUTER_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
-        { status: 503 },
-      );
-    }
-
     const form = await request.formData();
     const question = String(form.get("question") ?? "").trim();
     const subject = String(form.get("subject") ?? "Toutes les matières");
@@ -227,18 +219,24 @@ export async function POST(request: Request) {
       });
     }
 
+    const key = process.env.DEEPSEEK_API_KEY?.trim();
+    if (!key) {
+      return NextResponse.json(
+        { error: "DEEPSEEK_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
+        { status: 503 },
+      );
+    }
+
     const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         Authorization: "Bearer " + key,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://djibotchat-9eme.vercel.app",
-        "X-Title": "DjibotChat 9e année",
       },
       body: JSON.stringify({
-        model: "openrouter/free",
+        model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
         messages,
         temperature: 0.2,
         stream: false,
@@ -249,7 +247,7 @@ export async function POST(request: Request) {
     const payload = await response.json();
     if (!response.ok) {
       const message = payload?.error?.message ?? response.statusText;
-      return NextResponse.json({ error: "Erreur OpenRouter : " + message }, { status: 502 });
+      return NextResponse.json({ error: "Erreur DeepSeek : " + message }, { status: 502 });
     }
 
     const message = payload?.choices?.[0]?.message?.content;
@@ -259,7 +257,7 @@ export async function POST(request: Request) {
         ? message.map((part: { text?: string }) => part.text ?? "").join("\n").trim()
         : "";
     if (!answer) {
-      return NextResponse.json({ error: "OpenRouter n'a renvoyé aucune réponse exploitable." }, { status: 502 });
+      return NextResponse.json({ error: "DeepSeek n'a renvoyé aucune réponse exploitable." }, { status: 502 });
     }
 
     const warnings = [...guideLoadWarnings, ...annaleLoadWarnings];
@@ -274,7 +272,7 @@ export async function POST(request: Request) {
       answer,
       sources: scored,
       warning: warnings.length ? warnings.join(" ") : undefined,
-      model: payload.model ?? "openrouter/free",
+      model: payload.model ?? process.env.DEEPSEEK_MODEL?.trim() ?? "deepseek-flash",
     });
   } catch (error) {
     return NextResponse.json(
