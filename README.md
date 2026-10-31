@@ -1,40 +1,40 @@
 # DjibotChat — assistant scolaire CRIPEN, 9e année
 
-DjibotChat aide à travailler sur les exercices de 9e année à Djibouti à partir des guides du professeur et des annales officielles du BEF. Les sources doivent rester visibles et une réponse générée ne doit jamais être présentée comme un corrigé officiel sans preuve dans le document.
+DjibotChat aide à travailler sur les exercices de 9e année à Djibouti à partir des guides du professeur et des annales officielles du BEF. Une réponse générée ne doit jamais être présentée comme un corrigé officiel sans preuve dans le document.
 
 ## Deux modes d'utilisation
 
 ### Application Streamlit (ordinateur / local)
 
-- Interface : \`app.py\`
-- Moteur : \`app/core.py\`
+- Interface : app.py
+- Moteur : app/core.py
 - OCR photo local avec Tesseract.
 - Recherche dans les guides PDF avec conservation du nom de fichier et de la page.
 - Réponse par OpenRouter (routeur gratuit) ou Ollama local, ou affichage des extraits sans IA.
 
 Installation Windows :
 
-\`\`\`powershell
+```powershell
 py -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements-streamlit.txt
 streamlit run app.py
-\`\`\`
+```
 
-Installez Tesseract OCR avec les langues française et anglaise. Pour OpenRouter, définissez \`OPENROUTER_API_KEY\` dans les variables d'environnement ou les secrets de l'hébergeur. Ne placez jamais cette clé dans un fichier versionné.
+Installez Tesseract OCR avec les langues française et anglaise. Pour OpenRouter, définissez OPENROUTER_API_KEY dans les variables d'environnement ou les secrets de l'hébergeur. Ne placez jamais cette clé dans un fichier versionné.
 
 ### Application Next.js (Vercel / Android)
 
-Le projet Next.js se trouve dans \`vercel-app/\`. Dans les paramètres Vercel, configurez le **Root Directory** sur \`vercel-app\`, puis ajoutez la variable secrète \`OPENROUTER_API_KEY\`.
+Le projet Next.js se trouve dans vercel-app/. Dans les paramètres Vercel, configurez le Root Directory sur vercel-app, puis ajoutez la variable secrète OPENROUTER_API_KEY.
 
-L'application utilise le modèle routeur \`openrouter/free\`. La disponibilité des modèles gratuits et leurs quotas peuvent varier ; aucun modèle payant n'est configuré en secours.
+L'application utilise le modèle routeur openrouter/free. La disponibilité des modèles gratuits et leurs quotas peuvent varier ; aucun modèle payant n'est configuré en secours.
 
 - Photo : Tesseract.js réalise l'OCR dans le navigateur. Le fichier photo n'est pas envoyé à l'API de réponse ; seul le texte reconnu est transmis. Vérifiez les nombres, signes et formules.
 - PDF et documents Word : extraction du texte côté serveur.
-- Recherche : classement BM25 avec priorité de classement aux passages pertinents provenant d'une correction officielle CRIPEN.
+- Recherche : classement BM25 avec priorité aux passages pertinents provenant d'une correction officielle CRIPEN.
 - Sources : les sujets officiels sont identifiés séparément des corrections officielles.
-- Annales : catalogue CRIPEN BEF 2024–2025, selon les liens disponibles dans \`vercel-app/annales.ts\`.
+- Annales : catalogue CRIPEN BEF 2024–2025, selon les liens disponibles dans vercel-app/annales.ts.
 
 ## Préparer les PDF scannés (traitement local)
 
@@ -42,30 +42,30 @@ Les PDF composés d'images sans couche texte sélectionnable doivent être prép
 
 Sur Ubuntu/Debian, installez OCRmyPDF et les langues Tesseract :
 
-\`\`\`bash
+```bash
 sudo apt-get update
 sudo apt-get install ocrmypdf tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng
-\`\`\`
+```
 
 Puis lancez le script depuis la racine du dépôt :
 
-\`\`\`bash
+```bash
 bash vercel-app/scripts/ocr_guides.sh ./guides ./ocr_ready
-\`\`\`
+```
 
-Le script conserve les pages qui possèdent déjà une couche texte et ajoute l'OCR aux pages scannées. Vérifiez les PDF générés avant de les utiliser. Pour le déploiement Vercel actuel, remplacez les PDF sources correspondants dans la branche \`vercel-deploy\` par les versions OCR validées, en conservant leurs noms de fichiers.
+Le script conserve les pages qui possèdent déjà une couche texte et ajoute l'OCR aux pages scannées. Vérifiez les PDF générés avant de les utiliser. Pour le déploiement Vercel actuel, remplacez les PDF sources correspondants dans la branche vercel-deploy par les versions OCR validées, en conservant leurs noms de fichiers.
 
 ## Tests
 
-La recherche BM25 possède des tests déterministes. Avec Node.js 22, depuis \`vercel-app/\` :
+La recherche BM25 possède des tests déterministes. Avec Node.js 22, depuis vercel-app/ :
 
-\`\`\`bash
+```bash
 node --experimental-strip-types --test lib/retrieval.test.ts
 npm install
 npm run build
-\`\`\`
+```
 
-Le workflow GitHub Actions exécute ces tests et construit l'application Next.js.
+Le workflow GitHub Actions est configuré pour exécuter ces tests et construire l'application Next.js.
 
 ## Fiabilité et limites
 
@@ -77,9 +77,9 @@ Le workflow GitHub Actions exécute ces tests et construit l'application Next.js
 
 ## Structure principale
 
-- \`app.py\`, \`app/core.py\` : application Streamlit et moteur local.
-- \`vercel-app/\` : application Next.js destinée à Vercel.
-- \`vercel-app/annales.ts\` : catalogue des sujets et corrections CRIPEN.
-- \`vercel-app/lib/retrieval.ts\` : classement BM25.
-- \`vercel-app/scripts/ocr_guides.sh\` : préparation locale des PDF scannés.
-- \`data/guides_professeurs/\` : emplacement facultatif des guides PDF locaux.
+- app.py et app/core.py : application Streamlit et moteur local.
+- vercel-app/ : application Next.js destinée à Vercel.
+- vercel-app/annales.ts : catalogue des sujets et corrections CRIPEN.
+- vercel-app/lib/retrieval.ts : classement BM25.
+- vercel-app/scripts/ocr_guides.sh : préparation locale des PDF scannés.
+- data/guides_professeurs/ : emplacement facultatif des guides PDF locaux.
