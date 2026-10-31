@@ -61,7 +61,7 @@ export default function Home() {
     try {
       const selectedFiles = Array.from(files ?? []);
       if (selectedFiles.length > 8) throw new Error("Ajoute au maximum 8 fichiers à la fois.");
-      const allowedExtensions = /\\.(jpe?g|png|webp|pdf|docx?)$/i;
+      const allowedExtensions = /\.(jpe?g|png|webp|pdf|docx?)$/i;
       const invalidFile = selectedFiles.find((file) => !allowedExtensions.test(file.name));
       if (invalidFile) {
         throw new Error("Format non pris en charge : " + invalidFile.name + ". Choisis une photo JPG/PNG/WEBP, un PDF ou un document Word DOC/DOCX.");
@@ -69,8 +69,8 @@ export default function Home() {
       const oversizedFile = selectedFiles.find((file) => file.size > 8 * 1024 * 1024);
       if (oversizedFile) throw new Error("Le fichier " + oversizedFile.name + " dépasse 8 Mo.");
 
-      const photos = selectedFiles.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name));
-      const documents = selectedFiles.filter((file) => !(file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)));
+      const photos = selectedFiles.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name));
+      const documents = selectedFiles.filter((file) => !(file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)));
       let recognizedExercise = "";
 
       if (photos.length) {
@@ -170,8 +170,8 @@ export default function Home() {
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📸 Photo de l'exercice, guide PDF ou document Word</label>
       <input id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
-      <label className="filePickerButton" htmlFor="guides">📎 Choisir des fichiers</label>
-      <p className="hint">Tu peux ajouter des photos d'exercices, des fichiers PDF et des documents Word (DOC ou DOCX), seuls ou ensemble. Sur Android, sélectionne Galerie, Photos ou Fichiers selon le type de document. Les photos sont lues par OCR ; le texte des PDF et Word est extrait automatiquement. Maximum 8 fichiers de 8 Mo chacun.</p>
+      <label className="filePickerButton" htmlFor="guides">📎 Ajouter des photos, PDF ou Word</label>
+      <p className="hint">Formats acceptés : photos JPG, PNG ou WEBP ; PDF ; documents Word DOC et DOCX. Tu peux sélectionner plusieurs fichiers à la fois. Sur Android, choisis Galerie/Photos pour une image ou Fichiers/Parcourir pour un PDF ou un document Word. Les photos sont lues par OCR ; le texte des PDF et Word est extrait automatiquement. Maximum 8 fichiers de 8 Mo chacun.</p>
       {files && files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) :</strong><ul>{Array.from(files).map((file, index) => <li key={index}>{file.name}</li>)}</ul></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
