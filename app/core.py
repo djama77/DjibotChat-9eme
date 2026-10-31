@@ -1,4 +1,5 @@
 import base64
+import os
 import re
 from collections import Counter
 from io import BytesIO
@@ -124,10 +125,10 @@ def _context(question: str, passages: list[dict]) -> str:
     )
 
 
-def ask_openrouter(question: str, passages: list[dict], api_key: str) -> str:
-    """Generate a French, guide-grounded answer using OpenRouter free-model router."""
+def ask_deepseek(question: str, passages: list[dict], api_key: str) -> str:
+    """Generate a French, guide-grounded answer using the official DeepSeek API."""
     if not api_key.strip():
-        raise ValueError("Clé API OpenRouter manquante. Ajoutez OPENROUTER_API_KEY dans les secrets ou variables d’environnement.")
+        raise ValueError("Clé API DeepSeek manquante. Ajoutez DEEPSEEK_API_KEY dans les variables d’environnement.")
     prompt = f"""Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti.
 Réponds en français, avec une explication simple, progressive et adaptée au collège.
 PRIORITÉ ABSOLUE : les guides du professeur fournis ci-dessous sont la référence.
@@ -141,16 +142,15 @@ Question/exercice de l’élève :
 EXTRAITS RETROUVÉS DANS LES GUIDES :
 {_context(question, passages)}
 """
+    model = os.getenv("DEEPSEEK_MODEL", "deepseek-flash").strip() or "deepseek-flash"
     response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
+        "https://api.deepseek.com/chat/completions",
         headers={
             "Authorization": f"Bearer {api_key.strip()}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://djibotchat-9eme.vercel.app",
-            "X-Title": "DjibotChat 9e année",
         },
         json={
-            "model": "openrouter/free",
+            "model": model,
             "messages": [
                 {"role": "system", "content": "Tu es un assistant scolaire rigoureux. N’invente jamais de sources ou de pages."},
                 {"role": "user", "content": prompt},
@@ -158,18 +158,17 @@ EXTRAITS RETROUVÉS DANS LES GUIDES :
             "temperature": 0.2,
             "stream": False,
         },
-        timeout=(8, 35),
+        timeout=(8, 45),
     )
     if not response.ok:
-        raise RuntimeError(f"Erreur OpenRouter ({response.status_code}) : {response.text[:500]}")
+        raise RuntimeError(f"Erreur DeepSeek ({response.status_code}) : {response.text[:500]}")
     data = response.json()
     choices = data.get("choices", [])
     answer = choices[0].get("message", {}).get("content", "").strip() if choices else ""
     if not answer:
-        raise RuntimeError("OpenRouter n’a renvoyé aucune réponse exploitable.")
-    selected_model = data.get("model")
-    if selected_model:
-        answer += f"\n\nModèle utilisé : {selected_model}"
+        raise RuntimeError("DeepSeek n’a renvoyé aucune réponse exploitable.")
+    selected_model = data.get("model") or model
+    answer += f"\n\nModèle utilisé : {selected_model}"
     return answer
 
 def ask_ollama(question: str, passages: list[dict], model: str = "qwen2.5:3b", base_url: str = "http://localhost:11434") -> str:
