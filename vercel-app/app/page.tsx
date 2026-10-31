@@ -70,12 +70,12 @@ export default function Home() {
       if (oversizedFile) throw new Error("Le fichier " + oversizedFile.name + " dépasse 8 Mo.");
 
       const photos = selectedFiles.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name));
-      const documents = selectedFiles.filter((file) => !file.type.startsWith("image/"));
+      const documents = selectedFiles.filter((file) => !(file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)));
       let recognizedExercise = "";
 
       if (photos.length) {
         const supported = ["image/jpeg", "image/png", "image/webp"];
-        const unsupported = photos.find((file) => !supported.includes(file.type));
+        const unsupported = photos.find((file) => file.type && !supported.includes(file.type));
         if (unsupported) {
           throw new Error("Format photo non pris en charge : " + unsupported.type + ". Utilise JPG, PNG ou WEBP.");
         }
