@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CRIPEN_ANNales, CRIPEN_ANNALES_PAGE } from "../annales";
 
 type TesseractApi = {
   recognize: (image: Blob, language: string) => Promise<{ data: { text: string } }>;
