@@ -168,9 +168,9 @@ export default function Home() {
       <label htmlFor="mode">Mode de travail</label>
       <select id="mode" value={mode} onChange={(event) => setMode(event.target.value as PedagogyMode)}>{Object.entries(PEDAGOGY_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
-      <label htmlFor="guides">📸 Photo de l'exercice, guide PDF ou document Word</label>
+      <label htmlFor="guides">📎 Ajouter une photo ou un document</label>
       <input id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
-      <label className="filePickerButton" htmlFor="guides">📎 Ajouter des photos, PDF ou Word</label>
+      <label className="filePickerButton" htmlFor="guides">📁 Choisir des fichiers — Photos · PDF · Word</label>
       <p className="hint">Formats acceptés : photos JPG, PNG ou WEBP ; PDF ; documents Word DOC et DOCX. Tu peux sélectionner plusieurs fichiers à la fois. Sur Android, choisis Galerie/Photos pour une image ou Fichiers/Parcourir pour un PDF ou un document Word. Les photos sont lues par OCR ; le texte des PDF et Word est extrait automatiquement. Maximum 8 fichiers de 8 Mo chacun.</p>
       {files && files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) :</strong><ul>{Array.from(files).map((file, index) => <li key={index}>{file.name}</li>)}</ul></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
