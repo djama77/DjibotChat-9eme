@@ -1,0 +1,28 @@
+name: Vercel app checks
+
+on:
+  pull_request:
+    paths:
+      - "vercel-app/**"
+      - ".github/workflows/vercel-app.yml"
+  push:
+    branches:
+      - vercel-deploy
+    paths:
+      - "vercel-app/**"
+      - ".github/workflows/vercel-app.yml"
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vercel-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --experimental-strip-types --test lib/retrieval.test.ts
+      - run: npm install --no-package-lock --no-audit --no-fund
+      - run: npm run build
