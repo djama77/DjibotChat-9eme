@@ -135,6 +135,7 @@ export async function POST(request: Request) {
     }
 
     const docs: DocChunk[] = [];
+    const uploadedDocumentTexts: string[] = [];
     const selectedGuides = subject === "Toutes les matières"
       ? REPOSITORY_GUIDES
       : REPOSITORY_GUIDES.filter((guide) => guide.subjects.includes(subject));
@@ -176,10 +177,17 @@ export async function POST(request: Request) {
           );
         }
         docs.push(...chunks(text, file.name));
+        uploadedDocumentTexts.push(`[DOCUMENT JOINT : ${file.name}]\n${text.slice(0, 20000)}`);
       } else if (name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-        docs.push(...chunks(await extractDocument(buffer, "docx"), file.name));
+        const text = await extractDocument(buffer, "docx");
+        if (!text.trim()) return NextResponse.json({ error: "Aucun texte n’a pu être extrait du document Word " + file.name + "." }, { status: 422 });
+        docs.push(...chunks(text, file.name));
+        uploadedDocumentTexts.push(`[DOCUMENT JOINT : ${file.name}]\n${text.slice(0, 20000)}`);
       } else if (name.endsWith(".doc") || file.type === "application/msword") {
-        docs.push(...chunks(await extractDocument(buffer, "doc"), file.name));
+        const text = await extractDocument(buffer, "doc");
+        if (!text.trim()) return NextResponse.json({ error: "Aucun texte n’a pu être extrait du document Word " + file.name + "." }, { status: 422 });
+        docs.push(...chunks(text, file.name));
+        uploadedDocumentTexts.push(`[DOCUMENT JOINT : ${file.name}]\n${text.slice(0, 20000)}`);
       } else if (file.type.startsWith("image/")) {
         return NextResponse.json(
           { error: "Les photos sont reconnues dans le navigateur. Réessaie depuis le formulaire pour lancer l'OCR local." },
@@ -193,7 +201,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const searchText = [question, recognizedExercise].filter(Boolean).join("\n");
+    const searchText = [question, recognizedExercise, uploadedDocumentTexts.join("\n\n").slice(0, 20000)].filter(Boolean).join("\n");
     const scored = rankDocuments(docs, searchText, subject, examYear, 8);
     const context = scored.length
       ? scored.map((source) => {
