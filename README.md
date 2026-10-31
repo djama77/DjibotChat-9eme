@@ -21,11 +21,14 @@ Routes disponibles :
 
 Dans les variables d'environnement Vercel, définir :
 
-- `OPENROUTER_API_KEY` : clé privée utilisée côté serveur pour le routeur `openrouter/free`.
+- `DEEPSEEK_API_KEY` : clé privée DeepSeek utilisée côté serveur.
+- `DEEPSEEK_MODEL` (facultatif) : modèle à utiliser ; valeur par défaut `deepseek-flash`.
+
+L'API utilise l'endpoint compatible OpenAI `https://api.deepseek.com/chat/completions`.
 
 Ne jamais placer une clé API dans le code, dans un fichier public ou dans Git.
 
-Le routeur gratuit dépend des modèles disponibles et de leurs quotas ; disponibilité et temps de réponse ne sont pas garantis. Sans clé, l'API renvoie une erreur de configuration lorsque la génération IA est demandée.
+L'API DeepSeek est facturée selon le modèle et le volume de jetons ; consultez les tarifs et quotas officiels. Sans clé, l'API renvoie une erreur de configuration lorsque la génération IA est demandée.
 
 ### Vérification après déploiement
 
