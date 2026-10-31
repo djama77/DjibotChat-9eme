@@ -1,65 +1,85 @@
-# DjibotChat — Chatbot IA CRIPEN, 9e année
+# DjibotChat — assistant scolaire CRIPEN, 9e année
 
-Application Streamlit pour aider les élèves à travailler sur des exercices de 9e année à partir des guides du professeur : import de PDF, photo d'exercice, OCR, recherche de passages et réponse pédagogique avec références aux fichiers et pages.
+DjibotChat aide à travailler sur les exercices de 9e année à Djibouti à partir des guides du professeur et des annales officielles du BEF. Une réponse générée ne doit jamais être présentée comme un corrigé officiel sans preuve dans le document.
 
-## Fonctions actuelles
+## Deux modes d'utilisation
 
-- Import de plusieurs guides PDF et conservation du nom de fichier et du numéro de page.
-- Chargement des PDF présents à la racine du dépôt et dans `data/guides_professeurs/` lors de l'indexation.
-- Import d'une photo JPG/PNG et OCR local via Tesseract.
-- Recherche textuelle des passages les plus proches, avec préférence pour le nom du fichier correspondant à la matière sélectionnée.
-- Réponse par Gemini API, Ollama local ou affichage des extraits sans IA.
-- Instruction explicite de signaler quand aucun corrigé suffisamment pertinent n'a été retrouvé au lieu d'inventer une correction officielle.
+### Application Streamlit (ordinateur / local)
 
-## Matières visées
+- Interface : app.py
+- Moteur : app/core.py
+- OCR photo local avec Tesseract.
+- Recherche dans les guides PDF avec conservation du nom de fichier et de la page.
+- Réponse par OpenRouter (routeur gratuit) ou Ollama local, ou affichage des extraits sans IA.
 
-Mathématiques, SVT, Physique-Chimie, Français, Anglais, Histoire-Géographie et Informatique. La couverture réelle dépend des guides fournis.
-
-## Déploiement / installation Windows
-
-Python 3.11 ou plus récent recommandé.
+Installation Windows :
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-streamlit.txt
 streamlit run app.py
 ```
 
-Installez également Tesseract OCR avec les langues française et anglaise pour la reconnaissance des photos.
+Installez Tesseract OCR avec les langues française et anglaise. Pour OpenRouter, définissez OPENROUTER_API_KEY dans les variables d'environnement ou les secrets de l'hébergeur. Ne placez jamais cette clé dans un fichier versionné.
 
-## Utiliser Gemini
+### Application Next.js (Vercel / Android)
 
-1. Créez une clé dans [Google AI Studio](https://aistudio.google.com/apikey).
-2. En local, définissez la variable d'environnement `GEMINI_API_KEY` ou saisissez la clé dans le panneau latéral de l'application.
-3. Sur Streamlit Community Cloud, ajoutez `GEMINI_API_KEY = "votre_clé"` dans les paramètres **Secrets** de l'application.
-4. Ne mettez jamais la clé API dans un fichier versionné sur GitHub.
+Le projet Next.js se trouve dans vercel-app/. Dans les paramètres Vercel, configurez le Root Directory sur vercel-app, puis ajoutez la variable secrète OPENROUTER_API_KEY.
 
-Modèle par défaut : `gemini-2.5-flash`. Vous pouvez le changer dans l'interface si votre compte donne accès à un autre modèle.
+L'application utilise le modèle routeur openrouter/free. La disponibilité des modèles gratuits et leurs quotas peuvent varier ; aucun modèle payant n'est configuré en secours.
 
-## Utiliser Ollama localement (option alternative)
+- Photo : Tesseract.js réalise l'OCR dans le navigateur. Le fichier photo n'est pas envoyé à l'API de réponse ; seul le texte reconnu est transmis. Vérifiez les nombres, signes et formules.
+- PDF et documents Word : extraction du texte côté serveur.
+- Recherche : classement BM25 avec priorité aux passages pertinents provenant d'une correction officielle CRIPEN.
+- Sources : les sujets officiels sont identifiés séparément des corrections officielles.
+- Annales : catalogue CRIPEN BEF 2024–2025, selon les liens disponibles dans vercel-app/annales.ts.
 
-```powershell
-ollama pull qwen2.5:3b
+## Préparer les PDF scannés (traitement local)
+
+Les PDF composés d'images sans couche texte sélectionnable doivent être préparés avant leur indexation. Cette opération est volontairement séparée de l'API Vercel.
+
+Sur Ubuntu/Debian, installez OCRmyPDF et les langues Tesseract :
+
+```bash
+sudo apt-get update
+sudo apt-get install ocrmypdf tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng
 ```
 
-Activez ensuite « Ollama local » et vérifiez que le service Ollama tourne sur l'ordinateur qui exécute l'application.
+Puis lancez le script depuis la racine du dépôt :
 
-## Guides PDF
+```bash
+bash vercel-app/scripts/ocr_guides.sh ./guides ./ocr_ready
+```
 
-Les guides peuvent être importés depuis l'interface, ajoutés à la racine du dépôt ou placés dans `data/guides_professeurs/`. N'ajoutez que des documents que vous êtes autorisé à partager. Les fichiers PDF scannés dont les pages ne contiennent aucune couche texte ne sont pas encore indexés par OCR automatique.
+Le script conserve les pages qui possèdent déjà une couche texte et ajoute l'OCR aux pages scannées. Vérifiez les PDF générés avant de les utiliser. Pour le déploiement Vercel actuel, remplacez les PDF sources correspondants dans la branche vercel-deploy par les versions OCR validées, en conservant leurs noms de fichiers.
 
-## Limites importantes
+## Tests
 
-- La recherche actuelle est une recherche textuelle par mots-clés, pas encore une recherche sémantique vectorielle.
-- L'OCR de photo utilise Tesseract et peut mal lire les formules, tableaux ou schémas : relisez le texte extrait.
-- Une page de guide qui ne contient pas de texte sélectionnable peut ne pas être exploitable.
-- Un passage proche ne prouve pas à lui seul qu'il s'agit du corrigé exact. Vérifiez toujours les sources et pages affichées.
-- Pour une application publique, il faudra tester les guides réels, ajouter des tests automatisés et surveiller les quotas de l'API.
+La recherche BM25 possède des tests déterministes. Avec Node.js 22, depuis vercel-app/ :
 
-## Structure
+```bash
+node --experimental-strip-types --test lib/retrieval.test.ts
+npm install
+npm run build
+```
 
-- `app.py` : interface Streamlit.
-- `app/core.py` : extraction PDF, OCR, recherche et appels Gemini/Ollama.
-- `data/guides_professeurs/` : emplacement facultatif des guides PDF locaux.
+Le workflow GitHub Actions est configuré pour exécuter ces tests et construire l'application Next.js.
+
+## Fiabilité et limites
+
+- Un passage pertinent ne prouve pas à lui seul qu'il s'agit du corrigé exact de l'exercice.
+- Si aucun extrait de correction officielle correspondant n'est retrouvé, l'application doit le signaler et séparer clairement l'explication pédagogique indépendante.
+- L'OCR peut mal reconnaître les formules, tableaux et schémas ; une vérification humaine reste nécessaire.
+- La recherche BM25 est lexicale : elle améliore le classement des passages, mais ne remplace pas une recherche sémantique vectorielle.
+- Les documents CRIPEN distants peuvent être indisponibles temporairement ; l'application doit afficher les avertissements au lieu d'inventer leur contenu.
+
+## Structure principale
+
+- app.py et app/core.py : application Streamlit et moteur local.
+- vercel-app/ : application Next.js destinée à Vercel.
+- vercel-app/annales.ts : catalogue des sujets et corrections CRIPEN.
+- vercel-app/lib/retrieval.ts : classement BM25.
+- vercel-app/scripts/ocr_guides.sh : préparation locale des PDF scannés.
+- data/guides_professeurs/ : emplacement facultatif des guides PDF locaux.

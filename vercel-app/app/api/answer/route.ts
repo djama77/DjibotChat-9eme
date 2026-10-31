@@ -1,17 +1,39 @@
 import { NextResponse } from "next/server";
 import pdf from "pdf-parse";
+import mammoth from "mammoth";
+import { CRIPEN_ANNales, type AnnaleResource } from "../../../annales";
+import { rankDocuments, type SearchDocument } from "../../../lib/retrieval";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function tokens(text: string): string[] {
-  const stop = new Set("le la les un une des du de d et ou a au aux en dans pour par sur avec est sont qui que quoi comment pourquoi exercice question calculer déterminer montrer donner soit ce cette ces leur on nous vous ils elles il elle être avoir faire plus moins comme mais donc quel quelle quels quelles".split(" "));
-  return (text.toLocaleLowerCase("fr").match(/[a-zà-ÿ0-9]+/gi) ?? []).filter(t => t.length > 1 && !stop.has(t));
-}
-function chunks(text: string, filename: string): Array<{filename:string;page:number;text:string}> {
-  const pages = text.split("\f"); const out: Array<{filename:string;page:number;text:string}> = [];
-  pages.forEach((page, i) => { const clean = page.replace(/\s+/g, " ").trim(); for (let start=0; start<clean.length; start+=850) { const piece=clean.slice(start, start+1000).trim(); if(piece) out.push({filename,page:i+1,text:piece}); } });
-  return out;
+type DocChunk = SearchDocument;
+
+function chunks(
+  text: string,
+  filename: string,
+  url?: string,
+  metadata: Partial<SearchDocument> = {},
+): DocChunk[] {
+  const pages = text.split("\f");
+  const output: DocChunk[] = [];
+  pages.forEach((page, index) => {
+    const clean = page.replace(/\s+/g, " ").trim();
+    for (let start = 0; start < clean.length; start += 850) {
+      const piece = clean.slice(start, start + 1000).trim();
+      if (piece) {
+        output.push({
+          filename,
+          page: index + 1,
+          text: piece,
+          sourceKind: "guide",
+          ...(url ? { url } : {}),
+          ...metadata,
+        });
+      }
+    }
+  });
+  return output;
 }
 
 const REPOSITORY_GUIDES = [
@@ -21,15 +43,26 @@ const REPOSITORY_GUIDES = [
   { filename: "fr.pdf", subjects: ["Français"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/fr.pdf" },
   { filename: "infos.pdf", subjects: ["Informatique"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/infos.pdf" },
 ];
-const guideCache = new Map<string, Promise<Array<{filename:string;page:number;text:string}>>>();
-async function loadRepositoryGuide(guide: typeof REPOSITORY_GUIDES[number]) {
+
+const guideCache = new Map<string, Promise<DocChunk[]>>();
+const annaleCache = new Map<string, Promise<DocChunk[]>>();
+
+async function loadRepositoryGuide(guide: typeof REPOSITORY_GUIDES[number]): Promise<DocChunk[]> {
   let cached = guideCache.get(guide.filename);
   if (!cached) {
     cached = (async () => {
       const response = await fetch(guide.url, { signal: AbortSignal.timeout(20000) });
-      if (!response.ok) throw new Error("Impossible de charger le guide " + guide.filename + " (HTTP " + response.status + ").");
+      if (!response.ok) {
+        throw new Error("Impossible de charger le guide " + guide.filename + " (HTTP " + response.status + ").");
+      }
       const parsed = await pdf(Buffer.from(await response.arrayBuffer()));
-      return chunks(parsed.text, guide.filename);
+      if (!parsed.text.trim()) {
+        throw new Error("Le guide " + guide.filename + " ne contient pas de couche texte exploitable. Préparez-le avec le script OCR local.");
+      }
+      return chunks(parsed.text, guide.filename, guide.url, {
+        sourceKind: "guide",
+        subjects: guide.subjects,
+      });
     })();
     guideCache.set(guide.filename, cached);
     cached.catch(() => guideCache.delete(guide.filename));
@@ -37,68 +70,214 @@ async function loadRepositoryGuide(guide: typeof REPOSITORY_GUIDES[number]) {
   return cached;
 }
 
+async function extractDocument(buffer: Buffer, format: "pdf" | "doc" | "docx"): Promise<string> {
+  if (format === "pdf") {
+    const parsed = await pdf(buffer);
+    return parsed.text;
+  }
+  if (format === "docx") {
+    const parsed = await mammoth.extractRawText({ buffer });
+    return parsed.value;
+  }
+
+  const WordExtractor = require("word-extractor") as new () => {
+    extract(input: Buffer): Promise<{ getBody(): string }>;
+  };
+  const extractor = new WordExtractor();
+  const document = await extractor.extract(buffer);
+  return document.getBody();
+}
+
+async function loadAnnale(resource: AnnaleResource): Promise<DocChunk[]> {
+  let cached = annaleCache.get(resource.url);
+  if (!cached) {
+    cached = (async () => {
+      const response = await fetch(resource.url, { signal: AbortSignal.timeout(16000) });
+      if (!response.ok) {
+        throw new Error("Le document CRIPEN « " + resource.title + " » est indisponible (HTTP " + response.status + ").");
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const text = await extractDocument(buffer, resource.format);
+      if (!text.trim()) {
+        throw new Error("Aucun texte extractible dans « " + resource.title + " ». Le document devra être préparé avec OCRmyPDF.");
+      }
+      return chunks(text, resource.title, resource.url, {
+        sourceKind: resource.kind === "Correction officielle" ? "official_correction" : "official_subject",
+        year: resource.year,
+        subjects: resource.subjects,
+      });
+    })();
+    annaleCache.set(resource.url, cached);
+    cached.catch(() => annaleCache.delete(resource.url));
+  }
+  return cached;
+}
+
 export async function POST(request: Request) {
   try {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) return NextResponse.json({error:"La clé GEMINI_API_KEY n’est pas encore configurée dans les variables d’environnement Vercel."},{status:500});
+    const key = process.env.OPENROUTER_API_KEY?.trim();
+    if (!key) {
+      return NextResponse.json(
+        { error: "OPENROUTER_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
+        { status: 503 },
+      );
+    }
+
     const form = await request.formData();
     const question = String(form.get("question") ?? "").trim();
     const subject = String(form.get("subject") ?? "Toutes les matières");
-    const uploaded = form.getAll("guides").filter((v): v is File => v instanceof File && v.size > 0);
-    if (!question && !uploaded.some(f => f.type.startsWith("image/"))) return NextResponse.json({error:"Ajoute une photo de l’exercice ou écris ta question."},{status:400});
-    if (uploaded.length > 8) return NextResponse.json({error:"Ajoute au maximum 8 photos ou guides à la fois."},{status:400});
-    const docs: Array<{filename:string;page:number;text:string}> = [];
-    const selectedGuides = subject === "Toutes les matières" ? REPOSITORY_GUIDES : REPOSITORY_GUIDES.filter(guide => guide.subjects.includes(subject));
+    const examYear = String(form.get("examYear") ?? "2025");
+    const recognizedExercise = String(form.get("recognizedExercise") ?? "").trim().slice(0, 12000);
+    const uploaded = form.getAll("guides").filter((value): value is File => value instanceof File && value.size > 0);
+
+    if (!question && !recognizedExercise && uploaded.length === 0) {
+      return NextResponse.json({ error: "Ajoute une photo lisible, un document ou écris ta question." }, { status: 400 });
+    }
+    if (uploaded.length > 8) {
+      return NextResponse.json({ error: "Ajoute au maximum 8 documents à la fois." }, { status: 400 });
+    }
+
+    const docs: DocChunk[] = [];
+    const selectedGuides = subject === "Toutes les matières"
+      ? REPOSITORY_GUIDES
+      : REPOSITORY_GUIDES.filter((guide) => guide.subjects.includes(subject));
     const guideResults = await Promise.allSettled(selectedGuides.map(loadRepositoryGuide));
-    for (const result of guideResults) { if (result.status === "fulfilled") docs.push(...result.value); }
-    const guideLoadWarnings = guideResults.filter((result): result is PromiseRejectedResult => result.status === "rejected").map(result => result.reason instanceof Error ? result.reason.message : "Un guide du dépôt GitHub n’a pas pu être chargé.");
-    const imageParts: Array<{inline_data:{mime_type:string;data:string}}> = [];
+    for (const result of guideResults) {
+      if (result.status === "fulfilled") docs.push(...result.value);
+    }
+    const guideLoadWarnings = guideResults
+      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+      .map((result) => result.reason instanceof Error ? result.reason.message : "Un guide du dépôt GitHub n'a pas pu être chargé.");
+
+    const selectedAnnales = subject !== "Toutes les matières"
+      ? CRIPEN_ANNales.filter(
+          (item) =>
+            item.subjects.includes(subject as "Mathématiques" | "SVT" | "Physique-Chimie" | "Français") &&
+            (examYear === "Toutes les sessions" || item.year === examYear),
+        )
+      : [];
+    const annaleResults = await Promise.allSettled(selectedAnnales.map(loadAnnale));
+    for (const result of annaleResults) {
+      if (result.status === "fulfilled") docs.push(...result.value);
+    }
+    const annaleLoadWarnings = annaleResults
+      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+      .map((result) => result.reason instanceof Error ? result.reason.message : "Une annale du CRIPEN n'a pas pu être chargée.");
+
     for (const file of uploaded) {
-      if (file.size > 8 * 1024 * 1024) return NextResponse.json({error:`Le fichier ${file.name} dépasse 8 Mo.`},{status:413});
-      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-        const parsed = await pdf(Buffer.from(await file.arrayBuffer()));
-        docs.push(...chunks(parsed.text, file.name));
+      if (file.size > 8 * 1024 * 1024) {
+        return NextResponse.json({ error: "Le fichier " + file.name + " dépasse 8 Mo." }, { status: 413 });
+      }
+      const name = file.name.toLowerCase();
+      const buffer = Buffer.from(await file.arrayBuffer());
+      if (file.type === "application/pdf" || name.endsWith(".pdf")) {
+        const text = await extractDocument(buffer, "pdf");
+        if (!text.trim()) {
+          return NextResponse.json(
+            { error: "Le PDF joint semble scanné sans texte sélectionnable. Prépare-le avec OCRmyPDF puis importe la version OCR." },
+            { status: 422 },
+          );
+        }
+        docs.push(...chunks(text, file.name));
+      } else if (name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        docs.push(...chunks(await extractDocument(buffer, "docx"), file.name));
+      } else if (name.endsWith(".doc") || file.type === "application/msword") {
+        docs.push(...chunks(await extractDocument(buffer, "doc"), file.name));
       } else if (file.type.startsWith("image/")) {
-        const supported = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
-        if (!supported.includes(file.type)) return NextResponse.json({error:`Le format photo ${file.type} n’est pas pris en charge. Utilise JPG, PNG ou WEBP.`},{status:400});
-        imageParts.push({inline_data:{mime_type:file.type,data:Buffer.from(await file.arrayBuffer()).toString("base64")}});
+        return NextResponse.json(
+          { error: "Les photos sont reconnues dans le navigateur. Réessaie depuis le formulaire pour lancer l'OCR local." },
+          { status: 400 },
+        );
       } else {
-        return NextResponse.json({error:`Format non pris en charge pour ${file.name}. Utilise une photo ou un PDF.`},{status:400});
+        return NextResponse.json(
+          { error: "Format non pris en charge pour " + file.name + ". Utilise une photo JPG/PNG/WEBP, un PDF ou un document Word." },
+          { status: 400 },
+        );
       }
     }
-    const effectiveQuestion = question || "Lis attentivement la photo de l’exercice, identifie la matière et toutes les questions, puis donne un corrigé détaillé adapté à un élève de 9ème à Djibouti.";
-    let recognizedExercise = "";
-    if (imageParts.length) {
-      const ocrResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key), {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "Transcris fidèlement le texte de cet exercice photographié, y compris nombres, signes, formules et questions. Ne résous pas l’exercice. Si un élément est illisible, indique [illisible]." }, ...imageParts] }], generationConfig: { temperature: 0 } }),
-        signal: AbortSignal.timeout(20000)
-      });
-      if (ocrResponse.ok) {
-        const ocrPayload = await ocrResponse.json();
-        recognizedExercise = (ocrPayload?.candidates?.[0]?.content?.parts ?? []).map((part: {text?:string}) => part.text ?? "").join("\\n");
-      }
-    }
-    const searchText = question + " " + recognizedExercise + " " + subject;
-    const qTokens = new Set(tokens(searchText));
-    const scored = docs.map(d => {
-      const dt = tokens(d.text); const unique = new Set(dt); let common = 0; qTokens.forEach(t => { if(unique.has(t)) common++; });
-      let score = common / Math.max(1,qTokens.size);
-      const filename = d.filename.toLowerCase();
-      const terms: Record<string,string[]> = {"Mathématiques":["math","mathematique"],"SVT":["svt","science"],"Physique-Chimie":["pc","physique","chimie"],"Français":["fr","francais"],"Anglais":["anglais","english"],"Histoire-Géographie":["histoire","geo"],"Informatique":["info"]};
-      if(subject !== "Toutes les matières" && (terms[subject] ?? []).some(t=>filename.includes(t))) score += .2;
-      return {...d,score};
-    }).filter(d=>d.score>=.08).sort((a,b)=>b.score-a.score).slice(0,6);
-    const context = scored.length ? scored.map(s=>`[Source : ${s.filename}, page PDF ${s.page}]\n${s.text}`).join("\n\n") : "[Aucun extrait suffisamment pertinent retrouvé dans les guides PDF du dépôt GitHub ou les PDF joints.]";
-    const prompt = `Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français simple, étape par étape. Lis d’abord attentivement la photo jointe et retranscris mentalement l’énoncé sans inventer les parties illisibles. Utilise en priorité les extraits des guides PDF ci-dessous pour chercher un corrigé correspondant. Si un passage répond à l’exercice, explique le corrigé et cite le fichier et la page. Si aucun corrigé correspondant n’est présent dans les extraits, écris « CORRIGÉ DU GUIDE NON RETROUVÉ » puis propose une résolution indépendante en indiquant clairement qu’elle n’a pas été vérifiée dans le guide. Si la photo est floue ou incomplète, demande une nouvelle photo plutôt que d’inventer. Montre les étapes de calcul et explique les notions au niveau 9ème.\nMatière choisie : ${subject}\nConsigne de l’élève : ${effectiveQuestion}\nTexte reconnu sur la photo pour chercher dans les guides : ${recognizedExercise}\nEXTRAITS DES GUIDES PDF JOINTS :\n${context}`;
-    const parts: Array<Record<string,unknown>> = [{text:prompt}, ...imageParts];
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:.2}}),signal:AbortSignal.timeout(50000)});
+
+    const searchText = [question, recognizedExercise].filter(Boolean).join("\n");
+    const scored = rankDocuments(docs, searchText, subject, examYear, 8);
+    const context = scored.length
+      ? scored.map((source) => {
+          const kind = source.sourceKind === "official_correction"
+            ? "CORRECTION OFFICIELLE CRIPEN"
+            : source.sourceKind === "official_subject"
+              ? "SUJET OFFICIEL CRIPEN (PAS UN CORRIGÉ)"
+              : "GUIDE DU PROFESSEUR / DOCUMENT JOINT";
+          const year = source.year ? " ; session BEF " + source.year : "";
+          const url = source.url ? " ; lien source : " + source.url : "";
+          return "[Type : " + kind + year + " ; source : " + source.filename + " ; page/segment : " + source.page + url + "]\n" + source.text;
+        }).join("\n\n")
+      : "[Aucun extrait suffisamment pertinent retrouvé dans les guides et annales sélectionnés.]";
+
+    const prompt =
+      "Tu es un assistant pédagogique pour les élèves de 9e année à Djibouti. Réponds en français clair, avec une explication progressive adaptée au collège.\n\n" +
+      "ORDRE OBLIGATOIRE DES SOURCES :\n" +
+      "1. Cherche d'abord une CORRECTION OFFICIELLE CRIPEN correspondant exactement à la matière, à la session et à l'exercice.\n" +
+      "2. Utilise ensuite le guide du professeur pour vérifier ou compléter.\n" +
+      "3. Un SUJET OFFICIEL contient l'énoncé : ce n'est jamais une correction.\n\n" +
+      "Si une correction officielle correspond clairement à l'exercice, restitue d'abord son contenu sans le déformer, puis ajoute une section « Explication pédagogique » qui détaille la méthode. Cite le titre du document et la page/segment fournis.\n" +
+      "Si aucune correction officielle correspondante n'est retrouvée, écris exactement « CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE » puis propose, si possible, une résolution indépendante sous le titre « Explication pédagogique non vérifiée par le CRIPEN ». Ne présente jamais une réponse générée comme officielle.\n" +
+      "Vérifie que le passage correspond bien à l'énoncé : la seule présence d'un document de correction dans les résultats ne prouve pas qu'il corrige cet exercice. N'invente jamais de source, de page ou de contenu illisible. Pour les calculs, montre les étapes.\n\n" +
+      "Matière : " + subject + "\nSession BEF : " + examYear + "\nQuestion : " + question +
+      "\nTexte reconnu sur la photo (OCR local) :\n" + (recognizedExercise || "[Aucun texte OCR fourni]") +
+      "\n\nEXTRAITS RETROUVÉS :\n" + context;
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + key,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://djibotchat-9eme.vercel.app",
+        "X-Title": "DjibotChat 9e année",
+      },
+      body: JSON.stringify({
+        model: "openrouter/free",
+        messages: [
+          { role: "system", content: "Tu es un assistant scolaire rigoureux. Ne fabrique jamais de corrigé officiel ni de référence." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(50000),
+    });
+
     const payload = await response.json();
-    if (!response.ok) return NextResponse.json({error:`Erreur Gemini : ${payload?.error?.message ?? response.statusText}`},{status:502});
-    const answer = (payload?.candidates?.[0]?.content?.parts ?? []).map((p:{text?:string})=>p.text ?? "").join("\n").trim();
-    if (!answer) return NextResponse.json({error:"Gemini n’a renvoyé aucune réponse exploitable."},{status:502});
-    return NextResponse.json({answer,sources:scored,warning:guideLoadWarnings.length ? "Certains guides automatiques n’ont pas pu être chargés : " + guideLoadWarnings.join(" ") : undefined});
-  } catch (e) {
-    return NextResponse.json({error:e instanceof Error ? e.message : "Erreur de traitement de la photo ou des guides PDF."},{status:500});
+    if (!response.ok) {
+      const message = payload?.error?.message ?? response.statusText;
+      return NextResponse.json({ error: "Erreur OpenRouter : " + message }, { status: 502 });
+    }
+
+    const message = payload?.choices?.[0]?.message?.content;
+    const answer = typeof message === "string"
+      ? message.trim()
+      : Array.isArray(message)
+        ? message.map((part: { text?: string }) => part.text ?? "").join("\n").trim()
+        : "";
+    if (!answer) {
+      return NextResponse.json({ error: "OpenRouter n'a renvoyé aucune réponse exploitable." }, { status: 502 });
+    }
+
+    const warnings = [...guideLoadWarnings, ...annaleLoadWarnings];
+    if (subject === "Toutes les matières") {
+      warnings.push("Choisis une matière précise pour rechercher également dans les annales officielles du CRIPEN.");
+    }
+    if (!scored.some((source) => source.sourceKind === "official_correction")) {
+      warnings.push("Aucun passage de correction officielle CRIPEN n'a été classé parmi les extraits retrouvés.");
+    }
+
+    return NextResponse.json({
+      answer,
+      sources: scored,
+      warning: warnings.length ? warnings.join(" ") : undefined,
+      model: payload.model ?? "openrouter/free",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erreur de traitement de la question ou des documents." },
+      { status: 500 },
+    );
   }
 }
