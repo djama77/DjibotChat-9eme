@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from app.core import extract_pdf_pages, find_relevant_passages, ask_openrouter, draft_grounded_answer
+from app.core import extract_pdf_pages, find_relevant_passages, ask_deepseek, draft_grounded_answer
 
 ROOT = Path(__file__).resolve().parents[1]
 SUBJECTS = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Anglais", "Histoire-Géographie", "Informatique"]
@@ -63,18 +63,18 @@ def answer(request: ExerciseRequest):
         raise HTTPException(status_code=503, detail="Aucun guide PDF lisible n'est disponible dans le déploiement.")
     passages = find_relevant_passages(request.question, docs, request.subject)
     if request.use_ai:
-        key = os.getenv("OPENROUTER_API_KEY", "").strip()
+        key = os.getenv("DEEPSEEK_API_KEY", "").strip()
         if not key:
-            raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY n'est pas configurée sur Vercel.")
+            raise HTTPException(status_code=503, detail="DEEPSEEK_API_KEY n'est pas configurée sur Vercel.")
         try:
-            result = ask_openrouter(request.question, passages, key)
+            result = ask_deepseek(request.question, passages, key)
             ai_status = "ok"
         except Timeout:
             result = draft_grounded_answer(request.question, passages)
             result += "\n\n**Information :** le service IA a dépassé le délai d'attente. Cette réponse provisoire reprend les passages retrouvés dans les guides ; elle n'est pas un corrigé officiel confirmé."
             ai_status = "timeout_fallback"
         except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"OpenRouter indisponible : {str(exc)[:300]}") from exc
+            raise HTTPException(status_code=502, detail=f"DeepSeek indisponible : {str(exc)[:300]}") from exc
     else:
         result = draft_grounded_answer(request.question, passages)
         ai_status = "disabled"
