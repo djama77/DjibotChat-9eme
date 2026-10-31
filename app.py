@@ -100,7 +100,7 @@ if st.button("Rechercher dans les guides et proposer le corrigé", type="primary
     else:
         passages = find_relevant_passages(question.strip(), st.session_state.docs, subject)
         st.markdown("### Corrigé et explication")
-        if engine == "OpenRouter (gratuit)":
+        if engine == "DeepSeek API":
             try:
                 st.markdown(ask_deepseek(question.strip(), passages, api_key))
             except Exception as exc:
