@@ -2,7 +2,7 @@ export const PEDAGOGY_MODES = {
   corrige: "Corrigé sourcé",
   aide: "Aide progressive",
   explique: "Explication de notion",
-  quiz: "Quiz d'entraînement",
+  quiz: `Crée 3 à 5 questions progressives basées uniquement sur les extraits. Réponds uniquement en JSON valide : {"questions":[{"question":"...","type":"choix|court","choix":["..."],"reponse":"...","explication":"...","source":"..."}]}. Ne fournis pas de réponse si les extraits ne permettent pas de la vérifier.`,
   erreur: "Comprendre mon erreur",
   revision: "Fiche de révision",
 } as const;
