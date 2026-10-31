@@ -149,7 +149,8 @@ export default function Home() {
     <form className="panel" onSubmit={submit}>
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis la matière et la session, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
-      <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value}>{value}</option>)}</select>
+      <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value} disabled={value === "Anglais" || value === "Histoire-Géographie"}>{value}{value === "Anglais" || value === "Histoire-Géographie" ? " — documents à intégrer" : ""}</option>)}</select>
+      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Pour éviter une réponse inventée, le mode « Corrigé sourcé » s’arrête lorsqu’aucun extrait pertinent n’est retrouvé.</p>
       <label htmlFor="examYear">Session des annales du BEF</label>
       <select id="examYear" value={examYear} onChange={(event) => setExamYear(event.target.value)}>
         <option value="2025">BEF 2025</option>
