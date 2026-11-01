@@ -227,45 +227,35 @@ export async function POST(request: Request) {
       });
     }
 
-    const key = process.env.DEEPSEEK_API_KEY?.trim();
+    const key = process.env.GEMINI_API_KEY?.trim();
     if (!key) {
       return NextResponse.json(
-        { error: "DEEPSEEK_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
+        { error: "GEMINI_API_KEY n'est pas configurée dans les variables d'environnement Vercel." },
         { status: 503 },
       );
     }
 
     const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    const geminiContents = messages.filter((message) => message.role !== "system").map((message) => ({ role: "user", parts: [{ text: message.content }] }));
+    const systemInstruction = messages.find((message) => message.role === "system")?.content;
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
-        messages,
-        temperature: 0.2,
-        stream: false,
-      }),
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}), contents: geminiContents, generationConfig: { temperature: 0.2 } }),
       signal: AbortSignal.timeout(50000),
     });
 
     const payload = await response.json();
     if (!response.ok) {
       const message = payload?.error?.message ?? response.statusText;
-      return NextResponse.json({ error: "Erreur DeepSeek : " + message }, { status: 502 });
+      return NextResponse.json({ error: "Erreur Google Gemini : " + message }, { status: 502 });
     }
 
-    const message = payload?.choices?.[0]?.message?.content;
-    const answer = typeof message === "string"
-      ? message.trim()
-      : Array.isArray(message)
-        ? message.map((part: { text?: string }) => part.text ?? "").join("\n").trim()
-        : "";
+    const answer = (payload?.candidates?.[0]?.content?.parts ?? []).map((part: { text?: string }) => part.text ?? "").join("\n").trim();
     if (!answer) {
-      return NextResponse.json({ error: "DeepSeek n'a renvoyé aucune réponse exploitable." }, { status: 502 });
+      return NextResponse.json({ error: "Google Gemini n\u0027a renvoyé aucune réponse exploitable." }, { status: 502 });
     }
 
     const warnings = [...guideLoadWarnings, ...annaleLoadWarnings];
@@ -280,7 +270,7 @@ export async function POST(request: Request) {
       answer,
       sources: scored,
       warning: warnings.length ? warnings.join(" ") : undefined,
-      model: payload.model ?? process.env.DEEPSEEK_MODEL?.trim() ?? "deepseek-flash",
+      model: model,
     });
   } catch (error) {
     return NextResponse.json(
