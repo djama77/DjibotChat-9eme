@@ -10,7 +10,7 @@ DjibotChat aide à travailler sur les exercices de 9e année à Djibouti à part
 - Moteur : app/core.py
 - OCR photo local avec Tesseract.
 - Recherche dans les guides PDF avec conservation du nom de fichier et de la page.
-- Réponse par OpenRouter (routeur gratuit) ou Ollama local, ou affichage des extraits sans IA.
+- Réponse par Google Gemini API ou Ollama local, ou affichage des extraits sans IA.
 
 Installation Windows :
 
@@ -22,13 +22,13 @@ pip install -r requirements-streamlit.txt
 streamlit run app.py
 ```
 
-Installez Tesseract OCR avec les langues française et anglaise. Pour OpenRouter, définissez OPENROUTER_API_KEY dans les variables d'environnement ou les secrets de l'hébergeur. Ne placez jamais cette clé dans un fichier versionné.
+Installez Tesseract OCR avec les langues française et anglaise. Pour OpenRouter, définissez GEMINI_API_KEY dans les variables d'environnement ou les secrets de l'hébergeur. Ne placez jamais cette clé dans un fichier versionné.
 
 ### Application Next.js (Vercel / Android)
 
-Le projet Next.js se trouve dans vercel-app/. Dans les paramètres Vercel, configurez le Root Directory sur vercel-app, puis ajoutez la variable secrète OPENROUTER_API_KEY.
+Le projet Next.js se trouve dans vercel-app/. Dans les paramètres Vercel, configurez le Root Directory sur vercel-app, puis ajoutez la variable secrète GEMINI_API_KEY.
 
-L'application utilise le modèle routeur openrouter/free. La disponibilité des modèles gratuits et leurs quotas peuvent varier ; aucun modèle payant n'est configuré en secours.
+L'application utilise le modèle routeur gemini-2.5-flash. La disponibilité des modèles gratuits et leurs quotas peuvent varier ; aucun modèle payant n'est configuré en secours.
 
 - Photo : Tesseract.js réalise l'OCR dans le navigateur. Le fichier photo n'est pas envoyé à l'API de réponse ; seul le texte reconnu est transmis. Vérifiez les nombres, signes et formules.
 - PDF et documents Word : extraction du texte côté serveur.
