@@ -23,7 +23,7 @@ type Source = {
   sourceKind?: "guide" | "official_subject" | "official_correction";
   year?: string;
 };
-type Result = { answer: string; sources: Source[]; warning?: string; model?: string; correctionStatus?: "official" | "ai_generated_unverified" };
+type Result = { answer: string; sources: Source[]; warning?: string; model?: string; correctionStatus?: "official_candidate" | "ai_generated_unverified" };
 
 const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Anglais", "Histoire-Géographie", "Informatique"];
 
@@ -214,7 +214,7 @@ export default function Home() {
     {result && <section className="panel answer">
       <h2>Corrigé et explication</h2>
       {result.correctionStatus === "ai_generated_unverified" && <p className="hint"><strong>Résolution IA — non officielle :</strong> aucun corrigé CRIPEN correspondant n’a été retrouvé. Vérifie le raisonnement avec ton professeur ou ton manuel.</p>}
-      {result.correctionStatus === "official" && <p className="hint"><strong>Correction officielle CRIPEN retrouvée.</strong> Les références sont indiquées ci-dessous.</p>}
+      {result.correctionStatus === "official_candidate" && <p className="hint"><strong>Source officielle candidate :</strong> un document CRIPEN de type correction figure parmi les résultats. Vérifie sa correspondance avec l’énoncé avant de considérer la correction comme officielle.</p>}
       {result.warning && <p className="hint">{result.warning}</p>}
       <div className="answerText">{result.answer}</div>
       {result.model && <p className="hint">Modèle : {result.model}</p>}
