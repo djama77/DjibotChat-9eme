@@ -1,0 +1,30 @@
+{
+  "id": "djibouti-francais-9eme-guide-professeur",
+  "title": "Guide Français 9ème année",
+  "document_type": "guide_professeur",
+  "subject": "Français",
+  "grade": "9ème année",
+  "country": "Djibouti",
+  "publisher": "MENFOP / CRIPEN",
+  "official_source_url": "https://education.dj/portail/metier/guides/9eme/fr.pdf",
+  "repository_file": "fr.pdf",
+  "repository_file_url": "https://github.com/djama77/DjibotChat-9eme/blob/main/fr.pdf",
+  "retrieval": {
+    "api_scans_repository_root_pdfs": true,
+    "subject_filter_filename_tokens": ["fr", "francais", "français"],
+    "page_citation": "PDF page number"
+  },
+  "verification": {
+    "official_catalog_entry_found": true,
+    "repository_pdf_exists": true,
+    "binary_checksum_match_to_official_source": false,
+    "content_reviewed_page_by_page": false,
+    "status": "present_in_repository_pending_binary_identity_and_content_validation"
+  },
+  "usage_rules": [
+    "Use as a French 9th-grade teacher-guide reference.",
+    "Do not label a passage as an official correction unless the corresponding correction is actually found in the guide.",
+    "Cite the source filename and PDF page returned by document retrieval.",
+    "If no relevant passage is found, report that the correction was not found in the indexed excerpts."
+  ]
+}
