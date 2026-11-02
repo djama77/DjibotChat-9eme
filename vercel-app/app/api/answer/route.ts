@@ -237,7 +237,7 @@ export async function POST(request: Request) {
 
     const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
 
-    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
     const geminiContents = messages.filter((message) => message.role !== "system").map((message) => ({ role: "user", parts: [{ text: message.content }] }));
     const systemInstruction = messages.find((message) => message.role === "system")?.content;
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
