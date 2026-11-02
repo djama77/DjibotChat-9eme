@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CRIPEN_ANNales, CRIPEN_ANNALES_PAGE } from "../annales";
 import { PEDAGOGY_MODES, type PedagogyMode } from "../lib/pedagogy";
 
@@ -47,7 +47,8 @@ export default function Home() {
   const [examYear, setExamYear] = useState("2025");
   const [mode, setMode] = useState<PedagogyMode>("corrige");
   const [studentAnswer, setStudentAnswer] = useState("");
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
@@ -59,8 +60,10 @@ export default function Home() {
     setResult(null);
 
     try {
-      const selectedFiles = Array.from(files ?? []);
-      if (selectedFiles.length > 8) throw new Error("Ajoute au maximum 8 fichiers à la fois.");
+      const selectedFiles = files;
+      if (selectedFiles.length > 8) throw new Error("Ajoute au maximum 8 fichiers à la fois, dont 5 photos maximum.");
+      const photoCount = selectedFiles.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length;
+      if (photoCount > 5) throw new Error("Tu peux ajouter jusqu’à 5 photos par envoi.");
       const allowedExtensions = /\.(jpe?g|png|webp|pdf|docx?)$/i;
       const invalidFile = selectedFiles.find((file) => !allowedExtensions.test(file.name));
       if (invalidFile) {
@@ -108,6 +111,36 @@ export default function Home() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleFilesSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const incoming = Array.from(event.currentTarget.files ?? []);
+    // Reset the native picker so the same file can be selected again if needed.
+    event.currentTarget.value = "";
+    if (!incoming.length) return;
+
+    const combined = [...files];
+    for (const file of incoming) {
+      const duplicate = combined.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
+      if (!duplicate) combined.push(file);
+    }
+    const photoCount = combined.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length;
+    if (photoCount > 5) {
+      setError("Maximum 5 photos par envoi. Les photos déjà sélectionnées sont conservées.");
+      return;
+    }
+    if (combined.length > 8) {
+      setError("Maximum 8 fichiers au total par envoi. Les fichiers déjà sélectionnés sont conservés.");
+      return;
+    }
+    setError("");
+    setFiles(combined);
+  }
+
+  function clearFiles() {
+    setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setError("");
   }
 
   function chooseSubject(value: string) {
@@ -169,13 +202,13 @@ export default function Home() {
       <select id="mode" value={mode} onChange={(event) => setMode(event.target.value as PedagogyMode)}>{Object.entries(PEDAGOGY_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📎 Ajouter une photo ou un document</label>
-      <input id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={(event) => setFiles(event.target.files)} />
+      <input ref={fileInputRef} id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={handleFilesSelected} />
       <label className="filePickerButton" htmlFor="guides">📁 Choisir des fichiers — Photos · PDF · Word</label>
-      <p className="hint">Formats acceptés : JPG, PNG, WEBP, PDF, DOC et DOCX. Sélection multiple autorisée. Sur Android, utilise Galerie/Photos pour les images ou Fichiers/Parcourir pour les PDF et Word. Les photos sont lues par OCR ; le texte des PDF et Word est extrait automatiquement pour alimenter la recherche. Maximum 8 fichiers de 8 Mo chacun.</p>
-      {files && files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) :</strong><ul>{Array.from(files).map((file, index) => <li key={index}>{file.name}</li>)}</ul></div>}
+      <p className="hint">Formats acceptés : JPG, PNG, WEBP, PDF, DOC et DOCX. Tu peux sélectionner plusieurs photos en une seule fois ou les ajouter en plusieurs sélections : elles seront cumulées. Maximum 5 photos et 8 fichiers au total, de 8 Mo chacun. Sur Android, utilise Galerie/Photos pour les images ou Fichiers/Parcourir pour les PDF et Word. Les photos sont lues par OCR.</p>
+      {files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) — {files.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length} photo(s) :</strong><ul>{files.map((file, index) => <li key={file.name + file.size + file.lastModified + index}>{file.name}</li>)}</ul><button type="button" className="filePickerButton" onClick={clearFiles}>✕ Effacer la sélection</button></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
-      <button className="submitButton" disabled={busy || (!question.trim() && !(files && files.length > 0))}>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
+      <button className="submitButton" disabled={busy || (!question.trim() && files.length === 0)}>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
     </form>
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
