@@ -251,18 +251,25 @@ export async function POST(request: Request) {
     if (subject === "Toutes les matières") {
       warnings.push("Choisis une matière précise pour rechercher également dans les annales officielles du CRIPEN.");
     }
-    const hasOfficialCorrection = scored.some((source) => source.sourceKind === "official_correction");
-    if (!hasOfficialCorrection) {
-      warnings.push("CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE. La réponse ci-dessus est une résolution indépendante générée par Gemini, non validée par le CRIPEN.");
+    const hasOfficialCorrectionCandidate = scored.some((source) => source.sourceKind === "official_correction");
+    const aiGeneratedCorrection = mode === "corrige" && (
+      !hasOfficialCorrectionCandidate ||
+      answer.includes("RÉSOLUTION PROPOSÉE PAR GEMINI") ||
+      answer.includes("CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE")
+    );
+    if (aiGeneratedCorrection) {
+      warnings.push("CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE POUR CET EXERCICE. La réponse est une résolution indépendante générée par Gemini, non validée par le CRIPEN.");
+    } else if (mode === "corrige" && hasOfficialCorrectionCandidate) {
+      warnings.push("Un document identifié comme correction officielle CRIPEN figure parmi les sources. Vérifie qu'il correspond exactement à l'énoncé.");
     }
     if (scored.length === 0 && mode === "corrige") {
-      warnings.push("Aucun extrait documentaire suffisamment pertinent n'a été retrouvé. Gemini a donc résolu l'exercice sans source documentaire.");
+      warnings.push("Aucun extrait documentaire suffisamment pertinent n'a été retrouvé. Gemini a résolu l'exercice à partir de ses connaissances, sans source documentaire.");
     }
 
     return NextResponse.json({
       answer,
       sources: scored,
-      correctionStatus: mode === "corrige" ? (hasOfficialCorrection ? "official" : "ai_generated_unverified") : undefined,
+      correctionStatus: mode === "corrige" ? (aiGeneratedCorrection ? "ai_generated_unverified" : "official_candidate") : undefined,
       warning: warnings.length ? warnings.join(" ") : undefined,
       model: model,
     });
