@@ -32,3 +32,15 @@ test("student input and retrieved context are bounded", () => {
   });
   assert.ok(messages[1].content.length < 50000);
 });
+
+
+test("corrigé mode asks Gemini to solve independently when no official source is available", () => {
+  const messages = buildPedagogyMessages({
+    mode: "corrige", question: "Résoudre 2x + 3 = 11", recognizedExercise: "",
+    studentAnswer: "", subject: "Mathématiques", year: "2025",
+    context: "[Aucun extrait suffisamment pertinent retrouvé dans les guides et annales sélectionnés.]",
+  });
+  assert.ok(messages[1].content.includes("NE REFUSE PAS ET NE T'ARRÊTE PAS"));
+  assert.ok(messages[1].content.includes("RÉSOLUTION PROPOSÉE PAR GEMINI — NON OFFICIELLE"));
+  assert.ok(messages[0].content.includes("l'absence de source documentaire n'est jamais une raison pour refuser"));
+});
