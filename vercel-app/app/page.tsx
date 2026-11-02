@@ -62,7 +62,7 @@ export default function Home() {
     try {
       const selectedFiles = files;
       if (selectedFiles.length > 8) throw new Error("Ajoute au maximum 8 fichiers à la fois, dont 5 photos maximum.");
-      const photoCount = selectedFiles.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)).length;
+      const photoCount = selectedFiles.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length;
       if (photoCount > 5) throw new Error("Tu peux ajouter jusqu’à 5 photos par envoi.");
       const allowedExtensions = /\.(jpe?g|png|webp|pdf|docx?)$/i;
       const invalidFile = selectedFiles.find((file) => !allowedExtensions.test(file.name));
@@ -124,7 +124,7 @@ export default function Home() {
       const duplicate = combined.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
       if (!duplicate) combined.push(file);
     }
-    const photoCount = combined.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)).length;
+    const photoCount = combined.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length;
     if (photoCount > 5) {
       setError("Maximum 5 photos par envoi. Les photos déjà sélectionnées sont conservées.");
       return;
@@ -205,7 +205,7 @@ export default function Home() {
       <input ref={fileInputRef} id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={handleFilesSelected} />
       <label className="filePickerButton" htmlFor="guides">📁 Choisir des fichiers — Photos · PDF · Word</label>
       <p className="hint">Formats acceptés : JPG, PNG, WEBP, PDF, DOC et DOCX. Tu peux sélectionner plusieurs photos en une seule fois ou les ajouter en plusieurs sélections : elles seront cumulées. Maximum 5 photos et 8 fichiers au total, de 8 Mo chacun. Sur Android, utilise Galerie/Photos pour les images ou Fichiers/Parcourir pour les PDF et Word. Les photos sont lues par OCR.</p>
-      {files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) — {files.filter((file) => file.type.startsWith("image/") || /\\.(jpe?g|png|webp)$/i.test(file.name)).length} photo(s) :</strong><ul>{files.map((file, index) => <li key={file.name + file.size + file.lastModified + index}>{file.name}</li>)}</ul><button type="button" className="filePickerButton" onClick={clearFiles}>✕ Effacer la sélection</button></div>}
+      {files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) — {files.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length} photo(s) :</strong><ul>{files.map((file, index) => <li key={file.name + file.size + file.lastModified + index}>{file.name}</li>)}</ul><button type="button" className="filePickerButton" onClick={clearFiles}>✕ Effacer la sélection</button></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
       <button className="submitButton" disabled={busy || (!question.trim() && files.length === 0)>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
