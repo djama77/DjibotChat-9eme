@@ -208,7 +208,7 @@ export default function Home() {
       {files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) — {files.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length} photo(s) :</strong><ul>{files.map((file, index) => <li key={file.name + file.size + file.lastModified + index}>{file.name}</li>)}</ul><button type="button" className="filePickerButton" onClick={clearFiles}>✕ Effacer la sélection</button></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
-      <button className="submitButton" disabled={busy || (!question.trim() && files.length === 0)>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
+      <button className="submitButton" disabled={busy || (!question.trim() && files.length === 0)}>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
     </form>
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
