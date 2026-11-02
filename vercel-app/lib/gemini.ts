@@ -26,7 +26,7 @@ function retryDelay(response: Response | undefined, attempt: number): number {
 
 /**
  * Retries only transient Gemini overload/server/network failures.
- * Three bounded attempts with a 15-second timeout stay within the API route budget.
+ * Three bounded attempts with a 12-second timeout fit the API route's 60-second budget, including guide loading.
  */
 export async function requestGeminiWithRetry(
   url: string,
@@ -34,7 +34,7 @@ export async function requestGeminiWithRetry(
   options: RetryOptions = {},
 ): Promise<GeminiRequestResult> {
   const maxAttempts = options.maxAttempts ?? 3;
-  const timeoutMs = options.timeoutMs ?? 15000;
+  const timeoutMs = options.timeoutMs ?? 12000;
   const fetcher = options.fetcher ?? fetch;
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
