@@ -23,7 +23,7 @@ type Source = {
   sourceKind?: "guide" | "official_subject" | "official_correction";
   year?: string;
 };
-type Result = { answer: string; sources: Source[]; warning?: string; model?: string };
+type Result = { answer: string; sources: Source[]; warning?: string; model?: string; correctionStatus?: "official_candidate" | "ai_generated_unverified" };
 
 const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Anglais", "Histoire-Géographie", "Informatique"];
 
@@ -190,7 +190,7 @@ export default function Home() {
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis la matière et la session, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
       <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value} disabled={value === "Anglais" || value === "Histoire-Géographie"}>{value}{value === "Anglais" || value === "Histoire-Géographie" ? " — documents à intégrer" : ""}</option>)}</select>
-      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Pour éviter une réponse inventée, le mode « Corrigé sourcé » s’arrête lorsqu’aucun extrait pertinent n’est retrouvé.</p>
+      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Si aucun corrigé officiel n’est retrouvé, Gemini propose une résolution indépendante clairement signalée comme non officielle.</p>
       <label htmlFor="examYear">Session des annales du BEF</label>
       <select id="examYear" value={examYear} onChange={(event) => setExamYear(event.target.value)}>
         <option value="2025">BEF 2025</option>
@@ -213,6 +213,8 @@ export default function Home() {
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
       <h2>Corrigé et explication</h2>
+      {result.correctionStatus === "ai_generated_unverified" && <p className="hint"><strong>Résolution IA — non officielle :</strong> aucun corrigé CRIPEN correspondant n’a été retrouvé. Vérifie le raisonnement avec ton professeur ou ton manuel.</p>}
+      {result.correctionStatus === "official_candidate" && <p className="hint"><strong>Source officielle candidate :</strong> un document CRIPEN de type correction figure parmi les résultats. Vérifie sa correspondance avec l’énoncé avant de considérer la correction comme officielle.</p>}
       {result.warning && <p className="hint">{result.warning}</p>}
       <div className="answerText">{result.answer}</div>
       {result.model && <p className="hint">Modèle : {result.model}</p>}
