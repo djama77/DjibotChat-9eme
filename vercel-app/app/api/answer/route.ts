@@ -216,17 +216,6 @@ export async function POST(request: Request) {
         }).join("\n\n")
       : "[Aucun extrait suffisamment pertinent retrouvé dans les guides et annales sélectionnés.]";
 
-    // Do not ask a free model to invent a correction when retrieval found no usable source.
-    // This is especially important for subjects that are not yet indexed in the repository.
-    if (mode === "corrige" && scored.length === 0) {
-      return NextResponse.json({
-        answer: "Aucun passage suffisamment pertinent n’a été retrouvé dans les documents disponibles. Je ne vais pas inventer un corrigé. Vérifie la matière et la session, reformule l’énoncé ou joins le guide/corrigé officiel correspondant.",
-        sources: [],
-        warning: [...guideLoadWarnings, ...annaleLoadWarnings, "Aucune source documentaire exploitable pour cette question."].join(" "),
-        model: "Recherche documentaire — aucun appel IA effectué",
-      });
-    }
-
     const key = process.env.GEMINI_API_KEY?.trim();
     if (!key) {
       return NextResponse.json(
@@ -262,13 +251,18 @@ export async function POST(request: Request) {
     if (subject === "Toutes les matières") {
       warnings.push("Choisis une matière précise pour rechercher également dans les annales officielles du CRIPEN.");
     }
-    if (!scored.some((source) => source.sourceKind === "official_correction")) {
-      warnings.push("Aucun passage de correction officielle CRIPEN n'a été classé parmi les extraits retrouvés.");
+    const hasOfficialCorrection = scored.some((source) => source.sourceKind === "official_correction");
+    if (!hasOfficialCorrection) {
+      warnings.push("CORRECTION OFFICIELLE CRIPEN NON RETROUVÉE. La réponse ci-dessus est une résolution indépendante générée par Gemini, non validée par le CRIPEN.");
+    }
+    if (scored.length === 0 && mode === "corrige") {
+      warnings.push("Aucun extrait documentaire suffisamment pertinent n'a été retrouvé. Gemini a donc résolu l'exercice sans source documentaire.");
     }
 
     return NextResponse.json({
       answer,
       sources: scored,
+      correctionStatus: mode === "corrige" ? (hasOfficialCorrection ? "official" : "ai_generated_unverified") : undefined,
       warning: warnings.length ? warnings.join(" ") : undefined,
       model: model,
     });
