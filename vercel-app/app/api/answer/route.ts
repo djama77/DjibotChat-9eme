@@ -4,6 +4,7 @@ import mammoth from "mammoth";
 import { CRIPEN_ANNales, type AnnaleResource } from "../../../annales";
 import { rankDocuments, type SearchDocument } from "../../../lib/retrieval";
 import { buildPedagogyMessages, PEDAGOGY_MODES, type PedagogyMode } from "../../../lib/pedagogy";
+import { requestGeminiWithRetry } from "../../../lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -229,15 +230,32 @@ export async function POST(request: Request) {
     const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
     const geminiContents = messages.filter((message) => message.role !== "system").map((message) => ({ role: "user", parts: [{ text: message.content }] }));
     const systemInstruction = messages.find((message) => message.role === "system")?.content;
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}), contents: geminiContents, generationConfig: { temperature: 0.2 } }),
-      signal: AbortSignal.timeout(50000),
-    });
+    let geminiResult: Awaited<ReturnType<typeof requestGeminiWithRetry>>;
+    try {
+      geminiResult = await requestGeminiWithRetry(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({ ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}), contents: geminiContents, generationConfig: { temperature: 0.2 } }),
+        },
+      );
+    } catch {
+      return NextResponse.json(
+        { error: "Gemini est momentanément indisponible ou surchargé après plusieurs tentatives. Réessaie dans quelques instants. Aucun corrigé n'a été généré." },
+        { status: 503 },
+      );
+    }
 
-    const payload = await response.json();
+    const { response, payload } = geminiResult;
     if (!response.ok) {
+      const status = response.status;
+      if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
+        return NextResponse.json(
+          { error: "Gemini est momentanément très sollicité. Réessaie dans quelques instants. Aucun corrigé n'a été généré.", retryable: true, attempts: geminiResult.attempts },
+          { status: 503 },
+        );
+      }
       const message = payload?.error?.message ?? response.statusText;
       return NextResponse.json({ error: "Erreur Google Gemini : " + message }, { status: 502 });
     }
