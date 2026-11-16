@@ -54,7 +54,7 @@ test("Arabic exercise model and BEF curriculum are included for Arabic, not unre
   assert.ok(arabic[0].content.includes("الوحدة الثانية: مهن المستقبل"));
   assert.ok(arabic[0].content.includes("Rosa Parks"));
   assert.ok(arabic[0].content.includes("commerce électronique"));
-  assert.ok(arabic[0].content.includes("proposition de progression"));
+  assert.ok(arabic[0].content.includes("proposition de révision"));
   assert.ok(arabic[0].content.includes("arabe.pdf"));
   assert.ok(arabic[0].content.includes("11 points"));
   const math = buildPedagogyMessages({
