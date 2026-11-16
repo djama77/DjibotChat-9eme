@@ -30,7 +30,7 @@ export function buildPedagogyMessages(input: {
   year: string;
   context: string;
 }) {
-  const isArabic = /arabe|العربية|العربي|مهن المستقبل|شخصيات ومواقف|مراجعة|مراجعة البكالوريا|bef commun/i.test(
+  const isArabic = /arabe|العربية|العربي|مهن المستقبل|شخصيات ومواقف|مراجعة|مراجعة البكالوريا/i.test(
     input.subject + " " + input.question + " " + input.recognizedExercise,
   );
   const system = [
