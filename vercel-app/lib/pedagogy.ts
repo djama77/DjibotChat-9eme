@@ -7,8 +7,8 @@ export const PEDAGOGY_MODES = {
   revision: "Fiche de révision",
 } as const;
 
-import { ARABIC_EXERCISE_REFERENCE, ARABIC_REFERENCE_INSTRUCTION } from "./arabic-reference";
-import { ARABIC_CURRICULUM_REFERENCE, ARABIC_CURRICULUM_INSTRUCTION } from "./arabic-curriculum";
+import { ARABIC_EXERCISE_REFERENCE, ARABIC_REFERENCE_INSTRUCTION } from "./arabic-reference.ts";
+import { ARABIC_CURRICULUM_REFERENCE, ARABIC_CURRICULUM_INSTRUCTION } from "./arabic-curriculum.ts";
 
 export type PedagogyMode = keyof typeof PEDAGOGY_MODES;
 
