@@ -45,3 +45,30 @@ test("topK is bounded to avoid oversized contexts", () => {
   const docs = Array.from({ length: 30 }, (_, i) => ({ filename: "Guide " + i, page: 1, text: "La photosynthèse produit de la matière organique." }));
   assert.ok(rankDocuments(docs, "photosynthèse matière organique", "Toutes les matières", "Toutes les sessions", 100).length <= 12);
 });
+
+test("Arabic queries retrieve Arabic guide passages", () => {
+  const results = rankDocuments([
+    {
+      filename: "Guide officiel arabe 9e CRIPEN",
+      page: 50,
+      text: "مطور البرامج هو الشخص الذي يقوم بإنشاء تطبيقات البرامج وصيانتها. يعمل مطورو البرامج باستخدام لغات حاسوبية.",
+      sourceKind: "guide",
+      subjects: ["Arabe"],
+    },
+  ], "مطور البرامج تطبيقات البرامج", "Arabe");
+  assert.equal(results.length, 1);
+  assert.equal(results[0].filename, "Guide officiel arabe 9e CRIPEN");
+  assert.ok(results[0].matchedTerms >= 3);
+});
+
+test("Arabic diacritics and tatweel are normalized for retrieval", () => {
+  const results = rankDocuments([
+    {
+      filename: "Guide arabe",
+      page: 16,
+      text: "مُطَوِّرُ البَرَامِجِ ومِهَنُ المُسْتَقْبَلِ",
+      subjects: ["Arabe"],
+    },
+  ], "مطور البرامج ومهن المستقبل", "Arabe");
+  assert.equal(results.length, 1);
+});
