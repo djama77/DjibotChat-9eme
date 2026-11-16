@@ -64,3 +64,11 @@ test("Arabic exercise model and BEF curriculum are included for Arabic, not unre
   assert.ok(!math[0].content.includes("الموضوع الثاني: المفردات"));
   assert.ok(!math[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
 });
+
+test("a generic BEF Commun request does not inject Arabic material into another subject", () => {
+  const maths = buildPedagogyMessages({
+    mode: "revision", question: "Prépare la révision BEF Commun",
+    recognizedExercise: "", studentAnswer: "", subject: "Mathématiques", year: "2026", context: "",
+  });
+  assert.ok(!maths[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
+});
