@@ -2,12 +2,13 @@ export const PEDAGOGY_MODES = {
   corrige: "Corrigé sourcé",
   aide: "Aide progressive",
   explique: "Explication de notion",
-  quiz: `Crée 3 à 5 questions progressives basées uniquement sur les extraits. Réponds uniquement en JSON valide : {"questions":[{"question":"...","type":"choix|court","choix":["..."],"reponse":"...","explication":"...","source":"..."}]}. Ne fournis pas de réponse si les extraits ne permettent pas de la vérifier.`,
+  quiz: `Crée 3 à 5 questions progressives basées uniquement sur les extraits. Réponds uniquement en JSON valide : {\\"questions\\":[{\\"question\\":\\"...\\",\\"type\\":\\"choix|court\\",\\"choix\\":[\\"...\\"],\\"reponse\\":\\"...\\",\\"explication\\":\\"...\\",\\"source\\":\\"...\\"}]}. Ne fournis pas de réponse si les extraits ne permettent pas de la vérifier.`,
   erreur: "Comprendre mon erreur",
   revision: "Fiche de révision",
 } as const;
 
 import { ARABIC_EXERCISE_REFERENCE, ARABIC_REFERENCE_INSTRUCTION } from "./arabic-reference.ts";
+import { ARABIC_CURRICULUM_REFERENCE, ARABIC_CURRICULUM_INSTRUCTION } from "./arabic-curriculum.ts";
 
 export type PedagogyMode = keyof typeof PEDAGOGY_MODES;
 
@@ -29,7 +30,7 @@ export function buildPedagogyMessages(input: {
   year: string;
   context: string;
 }) {
-  const isArabic = /arabe|العربية|العربي/i.test(
+  const isArabic = /arabe|العربية|العربي|مهن المستقبل|شخصيات ومواقف|مراجعة|مراجعة البكالوريا|bef commun/i.test(
     input.subject + " " + input.question + " " + input.recognizedExercise,
   );
   const system = [
@@ -43,6 +44,9 @@ export function buildPedagogyMessages(input: {
       "MODÈLE DE RÉFÉRENCE POUR LES EXERCICES D'ARABE :",
       ARABIC_REFERENCE_INSTRUCTION,
       ARABIC_EXERCISE_REFERENCE,
+      "PROGRAMME DE RÉVISION BEF COMMUN – ARABE 9e ANNÉE :",
+      ARABIC_CURRICULUM_INSTRUCTION,
+      JSON.stringify(ARABIC_CURRICULUM_REFERENCE),
     ] : []),
   ].join("\n");
   const data = JSON.stringify({
