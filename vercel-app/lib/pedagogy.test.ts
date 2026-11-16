@@ -33,7 +33,6 @@ test("student input and retrieved context are bounded", () => {
   assert.ok(messages[1].content.length < 50000);
 });
 
-
 test("corrigé mode asks Gemini to solve independently when no official source is available", () => {
   const messages = buildPedagogyMessages({
     mode: "corrige", question: "Résoudre 2x + 3 = 11", recognizedExercise: "",
@@ -43,4 +42,33 @@ test("corrigé mode asks Gemini to solve independently when no official source i
   assert.ok(messages[1].content.includes("NE REFUSE PAS ET NE T'ARRÊTE PAS"));
   assert.ok(messages[1].content.includes("RÉSOLUTION PROPOSÉE PAR GEMINI — NON OFFICIELLE"));
   assert.ok(messages[0].content.includes("l'absence de source documentaire n'est jamais une raison pour refuser"));
+});
+
+test("Arabic exercise model and BEF curriculum are included for Arabic, not unrelated subjects", () => {
+  const arabic = buildPedagogyMessages({
+    mode: "revision", question: "Prépare la révision BEF Commun des deux premiers mois",
+    recognizedExercise: "", studentAnswer: "", subject: "Arabe", year: "2026", context: "",
+  });
+  assert.ok(arabic[0].content.includes("الموضوع الثاني: المفردات"));
+  assert.ok(arabic[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
+  assert.ok(arabic[0].content.includes("الوحدة الثانية: مهن المستقبل"));
+  assert.ok(arabic[0].content.includes("Rosa Parks"));
+  assert.ok(arabic[0].content.includes("commerce électronique"));
+  assert.ok(arabic[0].content.includes("proposition de révision"));
+  assert.ok(arabic[0].content.includes("arabe.pdf"));
+  assert.ok(arabic[0].content.includes("11 points"));
+  const math = buildPedagogyMessages({
+    mode: "corrige", question: "Résoudre 2x + 3 = 11", recognizedExercise: "",
+    studentAnswer: "", subject: "Mathématiques", year: "2026", context: "",
+  });
+  assert.ok(!math[0].content.includes("الموضوع الثاني: المفردات"));
+  assert.ok(!math[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
+});
+
+test("a generic BEF Commun request does not inject Arabic material into another subject", () => {
+  const maths = buildPedagogyMessages({
+    mode: "revision", question: "Prépare la révision BEF Commun",
+    recognizedExercise: "", studentAnswer: "", subject: "Mathématiques", year: "2026", context: "",
+  });
+  assert.ok(!maths[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
 });

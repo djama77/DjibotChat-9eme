@@ -6,11 +6,19 @@ export type SearchDocument = {
 export type RankedDocument = SearchDocument & { score: number; matchedTerms: number; matchRatio: number };
 
 const STOP_WORDS = new Set(
-  "le la les un une des du de d et ou a au aux en dans pour par sur avec est sont qui que quoi comment pourquoi exercice question calculer déterminer montrer donner soit ce cette ces leur leurs on nous vous ils elles il elle être avoir faire plus moins comme mais donc où quel quelle quels quelles the an and or is of in to with what how why".split(" "),
+  "le la les un une des du de d et ou a au aux en dans pour par sur avec est sont qui que quoi comment pourquoi exercice question calculer déterminer montrer donner soit ce cette ces leur leurs on nous vous ils elles il elle être avoir faire plus moins comme mais donc où quel quelle quels quelles the an and or is of in to with what how why في من على إلى عن هذا هذه هو هي التي الذي التي ما ماذا كيف و أو ثم كان كانت يكون تكون".split(" "),
 );
 
+function normalizeSearchText(text: string): string {
+  return text.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "")
+    .replace(/\u0640/g, "")
+    .toLocaleLowerCase("fr");
+}
+
 export function tokenize(text: string): string[] {
-  return (text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").match(/[a-z0-9]+/g) ?? [])
+  return (normalizeSearchText(text).match(/[\p{L}\p{N}]+/gu) ?? [])
     .filter((token) => token.length > 1 && !STOP_WORDS.has(token));
 }
 
@@ -40,7 +48,7 @@ export function rankDocuments(
   }
 
   const k1 = 1.5, b = 0.75, totalDocuments = scoped.length;
-  const normalizedQuery = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/\s+/g, " ").trim();
+  const normalizedQuery = normalizeSearchText(query).replace(/\s+/g, " ").trim();
 
   return scoped.map((document, index) => {
     const terms = tokenized[index];
@@ -58,7 +66,7 @@ export function rankDocuments(
     }
     const matchRatio = matchedTerms / queryTerms.length;
     if (!matchedTerms || matchRatio < 0.15) return { ...document, score: 0, matchedTerms, matchRatio };
-    const normalizedText = document.text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/\s+/g, " ");
+    const normalizedText = normalizeSearchText(document.text).replace(/\s+/g, " ");
     if (normalizedQuery.length >= 12 && normalizedText.includes(normalizedQuery)) score *= 1.2;
     score += 0.25 * matchRatio;
     if (document.sourceKind === "official_correction") score *= 1.35;

@@ -25,7 +25,7 @@ type Source = {
 };
 type Result = { answer: string; sources: Source[]; warning?: string; model?: string; correctionStatus?: "official_candidate" | "ai_generated_unverified" };
 
-const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Anglais", "Histoire-Géographie", "Informatique"];
+const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Arabe", "Anglais", "Histoire-Géographie", "Informatique"];
 
 async function loadTesseract(): Promise<TesseractApi> {
   if (window.Tesseract) return window.Tesseract;
@@ -190,7 +190,7 @@ export default function Home() {
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis la matière et la session, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
       <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value} disabled={value === "Anglais" || value === "Histoire-Géographie"}>{value}{value === "Anglais" || value === "Histoire-Géographie" ? " — documents à intégrer" : ""}</option>)}</select>
-      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Si aucun corrigé officiel n’est retrouvé, Gemini propose une résolution indépendante clairement signalée comme non officielle.</p>
+      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français, Arabe et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Si aucun corrigé officiel n’est retrouvé, Gemini propose une résolution indépendante clairement signalée comme non officielle.</p>
       <label htmlFor="examYear">Session des annales du BEF</label>
       <select id="examYear" value={examYear} onChange={(event) => setExamYear(event.target.value)}>
         <option value="2025">BEF 2025</option>

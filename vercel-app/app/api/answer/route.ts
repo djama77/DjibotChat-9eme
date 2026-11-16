@@ -44,6 +44,7 @@ const REPOSITORY_GUIDES = [
   { filename: "pc(1).pdf", subjects: ["Physique-Chimie"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/pc%281%29.pdf" },
   { filename: "fr.pdf", subjects: ["Français"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/fr.pdf" },
   { filename: "infos.pdf", subjects: ["Informatique"], url: "https://raw.githubusercontent.com/djama77/DjibotChat-9eme/vercel-deploy/infos.pdf" },
+  { filename: "Guide officiel arabe 9e CRIPEN 2022-2023", subjects: ["Arabe"], url: "https://education.dj/portail/metier/guides/9eme/arabe.pdf" },
 ];
 
 const guideCache = new Map<string, Promise<DocChunk[]>>();

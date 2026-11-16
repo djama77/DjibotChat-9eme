@@ -23,3 +23,25 @@ jobs:
           pip install pytest
       - name: Exécuter les tests
         run: pytest -q
+
+  tests-vercel-app:
+    name: Tests et compilation Next.js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vercel-app
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Installer les dépendances
+        run: npm install
+      - name: Exécuter les tests TypeScript
+        run: npm test
+      - name: Vérifier les types TypeScript
+        run: npm run lint
+      - name: Construire l'application Next.js
+        run: npm run build
