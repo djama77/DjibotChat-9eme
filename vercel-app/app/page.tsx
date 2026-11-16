@@ -25,7 +25,7 @@ type Source = {
 };
 type Result = { answer: string; sources: Source[]; warning?: string; model?: string; correctionStatus?: "official_candidate" | "ai_generated_unverified" };
 
-const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Anglais", "Histoire-Géographie", "Informatique"];
+const subjects = ["Toutes les matières", "Mathématiques", "SVT", "Physique-Chimie", "Français", "Arabe", "Anglais", "Histoire-Géographie", "Informatique"];
 
 async function loadTesseract(): Promise<TesseractApi> {
   if (window.Tesseract) return window.Tesseract;
