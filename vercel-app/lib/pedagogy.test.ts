@@ -44,3 +44,20 @@ test("corrigé mode asks Gemini to solve independently when no official source i
   assert.ok(messages[1].content.includes("RÉSOLUTION PROPOSÉE PAR GEMINI — NON OFFICIELLE"));
   assert.ok(messages[0].content.includes("l'absence de source documentaire n'est jamais une raison pour refuser"));
 });
+
+
+test("Arabic reference is included for Arabic exercises and omitted for unrelated subjects", () => {
+  const arabic = buildPedagogyMessages({
+    mode: "corrige", question: "أجب عن الأسئلة", recognizedExercise: "",
+    studentAnswer: "", subject: "Arabe", year: "2026", context: "",
+  });
+  assert.ok(arabic[0].content.includes("الموضوع الثاني: المفردات"));
+  assert.ok(arabic[0].content.includes("هات ضد الكلمات التالية"));
+  assert.ok(arabic[0].content.includes("11 points"));
+  assert.ok(arabic[0].content.includes("demande cette phrase"));
+  const math = buildPedagogyMessages({
+    mode: "corrige", question: "Résoudre 2x + 3 = 11", recognizedExercise: "",
+    studentAnswer: "", subject: "Mathématiques", year: "2026", context: "",
+  });
+  assert.ok(!math[0].content.includes("الموضوع الثاني: المفردات"));
+});
