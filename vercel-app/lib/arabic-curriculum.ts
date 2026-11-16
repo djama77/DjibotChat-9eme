@@ -1,18 +1,19 @@
 /**
- * Référentiel de révision arabe – 9e année, préparé à partir des éléments
- * transmis par l'utilisateur et des liens institutionnels indiqués.
+ * Référentiel arabe – 9e année, vérifié sur le guide officiel CRIPEN 2022-2023.
+ * Les pages indiquées sont les pages imprimées du guide (pagination PDF + 1).
  *
- * La répartition en Mois 1 / Mois 2 est une proposition pédagogique :
- * elle ne constitue pas un calendrier officiel publié par le CRIPEN.
+ * La division en Mois 1 / Mois 2 est une proposition pédagogique, pas un
+ * calendrier mensuel officiel publié par le CRIPEN.
  */
 export const ARABIC_CURRICULUM_REFERENCE = {
   title: "Révision BEF – Arabe – 9e année",
-  status: "Référentiel pédagogique de travail, à vérifier sur les PDF officiels",
+  status: "Plan de révision vérifié sur le guide officiel CRIPEN 2022-2023",
   sources: [
     {
-      label: "Guide de l'enseignant en langue arabe – 9e année (édition 2022-2023)",
+      label: "Guide de l'enseignant en langue arabe – 9e année (2022-2023)",
       url: "https://education.dj/portail/metier/guides/9eme/arabe.pdf",
-      institution: "CRIPEN / Ministère de l'Éducation nationale de Djibouti",
+      institution: "Centre de recherches, d'information et de production de l'éducation (CRIPEN)",
+      pages: "Unité 1 : pp. 13-15 ; Unité 2 : pp. 16-18 ; textes d'écoute de l'unité 2 : pp. 50-51",
     },
     {
       label: "Manuels expérimentaux de 9e année",
@@ -28,45 +29,114 @@ export const ARABIC_CURRICULUM_REFERENCE = {
   months: [
     {
       month: 1,
+      scheduleStatus: "Proposition de révision",
       unit: "الوحدة الأولى: شخصيات ومواقف",
       translation: "Unité 1 – Personnalités et situations",
+      officialPages: "13-15",
       lessons: [
-        { type: "Texte oral", title: "مجدي يعقوب", note: "Magdi Yacoub" },
-        { type: "Dialogue", title: "Rosa Parks" },
-        { type: "Texte de lecture", title: "صفات الحاكم العادل", note: "Les qualités d'un dirigeant juste" },
-        { type: "Texte oral", title: "علي بنات", note: "Ali Banat" },
-        { type: "Dialogue", title: "Muhammad Ali" },
-        { type: "Poème", title: "قصيدة الحرية", note: "Le poème de la liberté" },
+        {
+          lesson: 1,
+          type: "Texte d'écoute et dialogue",
+          title: "مجدي يعقوب",
+          associatedDialogue: "روزا باركس",
+          note: "Magdi Yacoub et Rosa Parks",
+          page: 13,
+        },
+        {
+          lesson: 2,
+          type: "Texte de lecture",
+          title: "صفات الحاكم العادل",
+          note: "Les qualités d'un dirigeant juste",
+          page: 13,
+        },
+        {
+          lesson: 3,
+          type: "Texte d'écoute et dialogue",
+          title: "علي بنات",
+          associatedDialogue: "محمد علي",
+          note: "Ali Banat et Muhammad Ali",
+          page: 13,
+        },
+        {
+          lesson: 4,
+          type: "Poème",
+          title: "قصيدة الحرية",
+          note: "Le poème de la liberté",
+          page: 13,
+        },
       ],
       languageFocus: [
-        { arabic: "النفي والإثبات", french: "Négation et affirmation" },
-        { arabic: "الاستفهام", french: "Interrogation" },
+        { arabic: "النفي والإثبات", french: "Négation et affirmation", page: 14 },
+        { arabic: "الاستفهام", french: "Interrogation", page: 14 },
+      ],
+      writing: [
+        { french: "La lettre administrative", page: 14 },
       ],
       skills: [
-        "Lecture et compréhension de textes",
-        "Rédaction d'une lettre administrative",
-        "Expression orale et présentation d'une personnalité",
+        "Comprendre des informations et des idées explicites ou implicites",
+        "Organiser les idées et reformuler un texte",
+        "Lire en respectant la ponctuation et l'intonation",
+        "Distinguer des textes descriptifs, narratifs et argumentatifs",
+        "Présenter des informations à l'oral",
       ],
     },
     {
       month: 2,
+      scheduleStatus: "Proposition de révision",
       unit: "الوحدة الثانية: مهن المستقبل",
       translation: "Unité 2 – Les métiers du futur",
+      officialPages: "16-18",
       lessons: [
-        { type: "Texte oral", title: "مطور البرامج", note: "Développeur informatique" },
-        { type: "Lecture", title: "ماذا ستفعل البشرية في مستقبل لا وظائف فيه؟" },
-        { type: "Texte oral", title: "المهندس الزراعي", note: "Ingénieur agronome" },
-        { type: "Poème", title: "العمل", note: "Le travail" },
+        {
+          lesson: 1,
+          type: "Texte d'écoute et dialogue",
+          title: "مطور البرامج",
+          associatedDialogue: "بين الصديق والخبير في أمن المعلومات",
+          note: "Développeur informatique et dialogue sur la sécurité de l'information",
+          page: 16,
+        },
+        {
+          lesson: 2,
+          type: "Texte de lecture",
+          title: "ماذا ستفعل البشرية في مستقبل لا وظائف فيه؟",
+          note: "Que fera l'humanité dans un avenir sans emplois ?",
+          page: 16,
+        },
+        {
+          lesson: 3,
+          type: "Texte d'écoute et dialogue",
+          title: "المهندس الزراعي",
+          associatedDialogue: "التجارة الإلكترونية",
+          note: "Ingénieur agronome et dialogue sur le commerce électronique",
+          page: 16,
+        },
+        {
+          lesson: 4,
+          type: "Poème",
+          title: "العمل",
+          note: "Le travail",
+          page: 16,
+        },
       ],
       languageFocus: [
-        { arabic: "التعجب القياسي", french: "L'exclamation selon les formes grammaticales" },
-        { arabic: "التعجب السماعي", french: "L'exclamation d'usage" },
+        { arabic: "التعجب القياسي", french: "L'exclamation selon les formes grammaticales", page: 17 },
+        { arabic: "التعجب السماعي", french: "L'exclamation d'usage", page: 17 },
+      ],
+      writing: [
+        { french: "La rédaction d'une biographie (السيرة)", page: 17 },
       ],
       skills: [
-        "Compréhension et résumé de textes",
-        "Dialogue sur la sécurité informatique",
-        "Vocabulaire des métiers et du commerce électronique",
-        "Rédaction et présentation orale",
+        "Comprendre des enregistrements et des textes de lecture",
+        "Repérer les idées principales et secondaires",
+        "Organiser et reformuler les informations",
+        "Résumer un texte",
+        "Développer le vocabulaire des métiers, de la sécurité informatique et du commerce électronique",
+        "Présenter des informations à l'oral",
+      ],
+      linkedActivities: [
+        { french: "Constituer un lexique bilingue du commerce électronique", page: 18 },
+        { french: "Distinguer intelligence artificielle et technologies numériques", page: 18 },
+        { french: "Rechercher des informations sur le droit du travail à Djibouti", page: 18 },
       ],
     },
   ],
@@ -74,17 +144,18 @@ export const ARABIC_CURRICULUM_REFERENCE = {
     "Cours en arabe avec explication en français",
     "Vocabulaire arabe-français",
     "Règles grammaticales accompagnées d'exemples",
-    "Exercices progressifs",
-    "Corrigés expliqués",
+    "Exercices progressifs fondés sur les compétences de l'unité",
+    "Corrigés expliqués, avec distinction entre corrigé officiel et résolution proposée",
     "Petite évaluation avec notation",
   ],
 } as const;
 
 export const ARABIC_CURRICULUM_INSTRUCTION = [
-  "Pour les demandes « Révision BEF Commun », « arabe 9e année », ou la préparation des deux premiers mois, utilise ce référentiel comme plan de révision.",
-  "Organise les séquences autour des deux unités, de leurs textes, dialogues, poèmes, points de langue et compétences indiqués.",
-  "Pour chaque leçon, privilégie les six rubriques du modèle : cours arabe-français, vocabulaire, grammaire et exemples, exercices progressifs, corrigés expliqués, évaluation notée.",
-  "La répartition des unités en Mois 1 et Mois 2 est une proposition de progression et non un calendrier officiel CRIPEN. Ne la présente jamais comme officielle.",
-  "Les titres et contenus de leçons ci-dessous sont une synthèse de travail transmise par l'utilisateur. Pour citer précisément le guide, confirmer une formulation, un ordre, une page ou un exercice, consulter le PDF officiel et citer uniquement les éléments effectivement vérifiés.",
-  "Les liens institutionnels sont des pistes documentaires ; un guide de l'enseignant ou un manuel n'est pas automatiquement un corrigé officiel d'annale BEF.",
+  "Pour les demandes « Révision BEF Commun », « arabe 9e année », ou la préparation des deux premières unités, utilise ce référentiel vérifié sur le guide officiel CRIPEN 2022-2023.",
+  "Respecte l'ordre exact des quatre leçons de chaque unité et distingue les textes d'écoute, dialogues, textes de lecture et poèmes.",
+  "Pour chaque leçon, privilégie les six rubriques : cours arabe-français, vocabulaire, grammaire et exemples, exercices progressifs, corrigés expliqués, évaluation notée.",
+  "La répartition en Mois 1 et Mois 2 est une proposition de révision. Le guide organise les unités et ne décrète pas que chacune correspond à un mois.",
+  "Utilise les pages imprimées référencées dans le guide pour les repères : unité 1 pp. 13-15, unité 2 pp. 16-18, textes d'écoute de l'unité 2 pp. 50-51. Ne fabrique jamais une pagination.",
+  "Le guide de l'enseignant est une source pédagogique officielle, mais n'est pas automatiquement un corrigé officiel d'une annale BEF. Ne qualifie une réponse de corrigé officiel que si un corrigé CRIPEN correspondant est effectivement retrouvé.",
+  "Ne reproduis pas intégralement les textes protégés du manuel ou du guide. Donne des résumés, explications, exercices originaux et courts extraits nécessaires à l'apprentissage.",
 ].join("\n");
