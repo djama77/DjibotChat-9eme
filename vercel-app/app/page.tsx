@@ -155,7 +155,7 @@ export default function Home() {
 
   function downloadWord() {
     if (!result) return;
-    const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\\\"", "&quot;").replaceAll("\\'", "&#39;");
+    const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
     const sourceList = result.sources.map((source) =>
       "<li><strong>" + escapeHtml(source.filename) + "</strong> — page/segment " + source.page + "</li>",
     ).join("");
