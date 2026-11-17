@@ -125,11 +125,22 @@ export async function POST(request: Request) {
     const rawMode = String(form.get("mode") ?? "corrige");
     const mode = Object.hasOwn(PEDAGOGY_MODES, rawMode) ? rawMode as PedagogyMode : "corrige";
     const studentAnswer = String(form.get("studentAnswer") ?? "").slice(0, 6000);
+    const assessment = {
+      period: String(form.get("assessmentPeriod") ?? "").slice(0, 100),
+      chapters: String(form.get("assessmentChapters") ?? "").slice(0, 3000),
+      duration: String(form.get("assessmentDuration") ?? "1 heure").slice(0, 40),
+      totalPoints: String(form.get("assessmentPoints") ?? "20").slice(0, 10),
+      customPeriod: String(form.get("assessmentCustomPeriod") ?? "").slice(0, 120),
+      difficulty: String(form.get("assessmentDifficulty") ?? "Standard").slice(0, 40),
+    };
+    if (mode === "devoir" && !assessment.chapters.trim()) {
+      return NextResponse.json({ error: "Indique les chapitres réellement étudiés pour construire un devoir adapté." }, { status: 400 });
+    }
     if (mode === "erreur" && !studentAnswer.trim()) return NextResponse.json({ error: "Ajoute ta réponse pour comprendre ton erreur." }, { status: 400 });
     const recognizedExercise = String(form.get("recognizedExercise") ?? "").trim().slice(0, 12000);
     const uploaded = form.getAll("guides").filter((value): value is File => value instanceof File && value.size > 0);
 
-    if (!question && !recognizedExercise && uploaded.length === 0) {
+    if (!question && !recognizedExercise && uploaded.length === 0 && mode !== "devoir") {
       return NextResponse.json({ error: "Ajoute une photo lisible, un document ou écris ta question." }, { status: 400 });
     }
     if (uploaded.length > 8) {
@@ -203,7 +214,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const searchText = [question, recognizedExercise, uploadedDocumentTexts.join("\n\n").slice(0, 20000)].filter(Boolean).join("\n");
+    const searchText = [question, recognizedExercise, assessment.chapters, assessment.period, uploadedDocumentTexts.join("\n\n").slice(0, 20000)].filter(Boolean).join("\n");
     const scored = rankDocuments(docs, searchText, subject, examYear, 8);
     const context = scored.length
       ? scored.map((source) => {
@@ -226,7 +237,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context });
+    const messages = buildPedagogyMessages({ mode, question, recognizedExercise, studentAnswer, subject, year: examYear, context, assessment: mode === "devoir" ? assessment : undefined });
 
     const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
     const geminiContents = messages.filter((message) => message.role !== "system").map((message) => ({ role: "user", parts: [{ text: message.content }] }));
@@ -267,6 +278,9 @@ export async function POST(request: Request) {
     }
 
     const warnings = [...guideLoadWarnings, ...annaleLoadWarnings];
+    if (mode === "devoir" && scored.length === 0) {
+      warnings.push("Aucun extrait CRIPEN suffisamment pertinent n’a été retrouvé pour les chapitres indiqués. Le devoir est une proposition pédagogique non officielle, à vérifier avec le professeur.");
+    }
     if (subject === "Toutes les matières") {
       warnings.push("Choisis une matière précise pour rechercher également dans les annales officielles du CRIPEN.");
     }

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildPedagogyMessages, PEDAGOGY_MODES } from "./pedagogy.ts";
 
-test("all six modes have an explicit pedagogical instruction", () => {
-  assert.equal(Object.keys(PEDAGOGY_MODES).length, 6);
+test("all seven modes have an explicit pedagogical instruction", () => {
+  assert.equal(Object.keys(PEDAGOGY_MODES).length, 7);
   for (const mode of Object.keys(PEDAGOGY_MODES) as Array<keyof typeof PEDAGOGY_MODES>) {
     const messages = buildPedagogyMessages({
       mode, question: "Question", recognizedExercise: "", studentAnswer: "",
@@ -71,4 +71,17 @@ test("a generic BEF Commun request does not inject Arabic material into another 
     recognizedExercise: "", studentAnswer: "", subject: "Mathématiques", year: "2026", context: "",
   });
   assert.ok(!maths[0].content.includes("الوحدة الأولى: شخصيات ومواقف"));
+});
+
+
+test("BEF assessment mode includes chapter scope and a complete non-official subject and correction", () => {
+  const messages = buildPedagogyMessages({
+    mode: "devoir", question: "Génère un devoir commun", recognizedExercise: "", studentAnswer: "",
+    subject: "SVT", year: "2026", context: "Guide professeur",
+    assessment: { period: "Deux premiers mois", chapters: "Cellule et génétique", duration: "1 heure", totalPoints: "20", customPeriod: "", difficulty: "Standard" },
+  });
+  assert.ok(messages[1].content.includes("SUJET"));
+  assert.ok(messages[1].content.includes("CORRIGÉ"));
+  assert.ok(messages[1].content.includes("Cellule et génétique"));
+  assert.ok(messages[1].content.includes("non officiel"));
 });

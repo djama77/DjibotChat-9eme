@@ -46,6 +46,12 @@ export default function Home() {
   const [subject, setSubject] = useState(subjects[0]);
   const [examYear, setExamYear] = useState("2025");
   const [mode, setMode] = useState<PedagogyMode>("corrige");
+  const [assessmentPeriod, setAssessmentPeriod] = useState("Deux premiers mois");
+  const [assessmentChapters, setAssessmentChapters] = useState("");
+  const [assessmentCustomPeriod, setAssessmentCustomPeriod] = useState("");
+  const [assessmentDuration, setAssessmentDuration] = useState("1 heure");
+  const [assessmentPoints, setAssessmentPoints] = useState("20");
+  const [assessmentDifficulty, setAssessmentDifficulty] = useState("Standard");
   const [studentAnswer, setStudentAnswer] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +105,12 @@ export default function Home() {
       data.set("examYear", examYear);
       data.set("mode", mode);
       data.set("studentAnswer", studentAnswer);
+      data.set("assessmentPeriod", assessmentPeriod);
+      data.set("assessmentChapters", assessmentChapters);
+      data.set("assessmentCustomPeriod", assessmentCustomPeriod);
+      data.set("assessmentDuration", assessmentDuration);
+      data.set("assessmentPoints", assessmentPoints);
+      data.set("assessmentDifficulty", assessmentDifficulty);
       data.set("recognizedExercise", recognizedExercise);
       documents.forEach((file) => data.append("guides", file));
 
@@ -141,6 +153,33 @@ export default function Home() {
     setFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setError("");
+  }
+
+  function downloadWord() {
+    if (!result) return;
+    const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+    const sourceList = result.sources.map((source) =>
+      "<li><strong>" + escapeHtml(source.filename) + "</strong> — page/segment " + source.page + "</li>",
+    ).join("");
+    const documentHtml = "<!doctype html><html><head><meta charset='utf-8'><title>Devoir commun BEF</title></head><body>" +
+      "<h1>DjibotChat 9ème — Devoir commun type BEF</h1>" +
+      "<p><strong>Matière :</strong> " + escapeHtml(subject) + "</p>" +
+      "<p><strong>Période :</strong> " + escapeHtml(assessmentPeriod === "Période personnalisée" ? assessmentCustomPeriod : assessmentPeriod) + "</p>" +
+      "<p><strong>Chapitres :</strong> " + escapeHtml(assessmentChapters) + "</p>" +
+      "<p><strong>Durée / note / difficulté :</strong> " + escapeHtml(assessmentDuration) + " / " + escapeHtml(assessmentPoints) + " / " + escapeHtml(assessmentDifficulty) + "</p>" +
+      "<hr><h2>Sujet et corrigé</h2><pre style='white-space:pre-wrap;font-family:Arial,sans-serif'>" + escapeHtml(result.answer) + "</pre>" +
+      (sourceList ? "<h2>Sources consultées</h2><ul>" + sourceList + "</ul>" : "") +
+      (result.warning ? "<p><strong>Note :</strong> " + escapeHtml(result.warning) + "</p>" : "") +
+      "</body></html>";
+    const blob = new Blob(["\ufeff", documentHtml], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "devoir-commun-bef-" + subject.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".doc";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function chooseSubject(value: string) {
@@ -189,8 +228,8 @@ export default function Home() {
     <form className="panel" onSubmit={submit}>
       <div className="sectionHeading"><span>01</span><div><h2>On travaille ensemble</h2><p>Choisis la matière et la session, prends une photo ou joins un document.</p></div></div>
       <label htmlFor="subject">Matière scolaire</label>
-      <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value} disabled={value === "Anglais" || value === "Histoire-Géographie"}>{value}{value === "Anglais" || value === "Histoire-Géographie" ? " — documents à intégrer" : ""}</option>)}</select>
-      <p className="hint">Documents actuellement indexés : Mathématiques, SVT, Physique-Chimie, Français, Arabe et Informatique. Anglais et Histoire-Géographie seront activés après l’ajout et la vérification de leurs guides. Si aucun corrigé officiel n’est retrouvé, Gemini propose une résolution indépendante clairement signalée comme non officielle.</p>
+      <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>{subjects.map((value) => <option key={value}>{value}</option>)}</select>
+      <p className="hint">Choisis la matière réellement étudiée. Les sources CRIPEN et les guides disponibles sont consultés lorsqu’ils existent. Si aucun document pertinent n’est retrouvé, le sujet généré reste une proposition non officielle.</p>
       <label htmlFor="examYear">Session des annales du BEF</label>
       <select id="examYear" value={examYear} onChange={(event) => setExamYear(event.target.value)}>
         <option value="2025">BEF 2025</option>
@@ -200,6 +239,23 @@ export default function Home() {
       <p className="hint">Pour rechercher dans les annales du CRIPEN, sélectionne une matière précise : Mathématiques, SVT, Physique-Chimie ou Français.</p>
       <label htmlFor="mode">Mode de travail</label>
       <select id="mode" value={mode} onChange={(event) => setMode(event.target.value as PedagogyMode)}>{Object.entries(PEDAGOGY_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+      {mode === "devoir" && <section className="assessmentFields" aria-label="Paramètres du devoir commun BEF">
+        <h3>Préparer le devoir commun</h3>
+        <p className="hint">Le devoir sera construit à partir des chapitres réellement étudiés. Il ne sera pas présenté comme un sujet officiel du CRIPEN.</p>
+        <label htmlFor="assessmentPeriod">Période de révision</label>
+        <select id="assessmentPeriod" value={assessmentPeriod} onChange={(event) => setAssessmentPeriod(event.target.value)}>
+          <option>Premier mois</option><option>Deux premiers mois</option><option>Trois premiers mois</option><option>Trimestre</option><option>Période personnalisée</option>
+        </select>
+        {assessmentPeriod === "Période personnalisée" && <><label htmlFor="assessmentCustomPeriod">Précise la période</label><input id="assessmentCustomPeriod" value={assessmentCustomPeriod} onChange={(event) => setAssessmentCustomPeriod(event.target.value)} placeholder="Ex. : du 1er au 15 octobre" /></>}
+        <label htmlFor="assessmentChapters">Chapitres réellement étudiés</label>
+        <textarea id="assessmentChapters" rows={4} value={assessmentChapters} onChange={(event) => setAssessmentChapters(event.target.value)} placeholder="Écris les titres des chapitres ou colle la liste du cahier de cours…" />
+        <label htmlFor="assessmentDuration">Durée du devoir</label>
+        <select id="assessmentDuration" value={assessmentDuration} onChange={(event) => setAssessmentDuration(event.target.value)}><option>1 heure</option><option>1 heure 30</option><option>2 heures</option></select>
+        <label htmlFor="assessmentPoints">Note totale</label>
+        <select id="assessmentPoints" value={assessmentPoints} onChange={(event) => setAssessmentPoints(event.target.value)}><option value="20">Sur 20</option><option value="40">Sur 40</option></select>
+        <label htmlFor="assessmentDifficulty">Niveau de difficulté</label>
+        <select id="assessmentDifficulty" value={assessmentDifficulty} onChange={(event) => setAssessmentDifficulty(event.target.value)}><option>Progressif</option><option>Standard</option><option>Renforcé</option></select>
+      </section>}
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📎 Ajouter une photo ou un document</label>
       <input ref={fileInputRef} id="guides" className="fileInputHidden" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple onChange={handleFilesSelected} />
@@ -208,11 +264,12 @@ export default function Home() {
       {files.length > 0 && <div className="selectedFiles" aria-live="polite"><strong>Fichiers sélectionnés ({files.length}) — {files.filter((file) => file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name)).length} photo(s) :</strong><ul>{files.map((file, index) => <li key={file.name + file.size + file.lastModified + index}>{file.name}</li>)}</ul><button type="button" className="filePickerButton" onClick={clearFiles}>✕ Effacer la sélection</button></div>}
       <label htmlFor="question">Consigne (facultatif si tu joins une photo)</label>
       <textarea id="question" rows={4} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. : Recherche le corrigé officiel du BEF 2025 en mathématiques et explique chaque étape…" />
-      <button className="submitButton" disabled={busy || (!question.trim() && files.length === 0)}>{busy ? "OCR et recherche dans les guides et annales…" : "📷 Lire, rechercher et corriger"}</button>
+      <button className="submitButton" disabled={busy || (mode === "devoir" ? !assessmentChapters.trim() : (!question.trim() && files.length === 0))}>{busy ? "Préparation et recherche dans les ressources…" : mode === "devoir" ? "🏆 Générer le sujet et le corrigé BEF" : "📷 Lire, rechercher et corriger"}</button>
     </form>
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
       <h2>Corrigé et explication</h2>
+      {mode === "devoir" && <button type="button" className="wordExportButton" onClick={downloadWord}>⬇️ Télécharger le sujet et le corrigé en Word</button>}
       {result.correctionStatus === "ai_generated_unverified" && <p className="hint"><strong>Résolution IA — non officielle :</strong> aucun corrigé CRIPEN correspondant n’a été retrouvé. Vérifie le raisonnement avec ton professeur ou ton manuel.</p>}
       {result.correctionStatus === "official_candidate" && <p className="hint"><strong>Source officielle candidate :</strong> un document CRIPEN de type correction figure parmi les résultats. Vérifie sa correspondance avec l’énoncé avant de considérer la correction comme officielle.</p>}
       {result.warning && <p className="hint">{result.warning}</p>}

@@ -5,6 +5,7 @@ export const PEDAGOGY_MODES = {
   quiz: `Crée 3 à 5 questions progressives basées uniquement sur les extraits. Réponds uniquement en JSON valide : {\"questions\":[{\"question\":\"...\",\"type\":\"choix|court\",\"choix\":[\"...\"],\"reponse\":\"...\",\"explication\":\"...\",\"source\":\"...\"}]}. Ne fournis pas de réponse si les extraits ne permettent pas de la vérifier.`,
   erreur: "Comprendre mon erreur",
   revision: "Fiche de révision",
+  devoir: "Devoir commun type BEF",
 } as const;
 
 import { ARABIC_EXERCISE_REFERENCE, ARABIC_REFERENCE_INSTRUCTION } from "./arabic-reference.ts";
@@ -19,6 +20,7 @@ const MODE_INSTRUCTIONS: Record<PedagogyMode, string> = {
   quiz: `Crée 3 à 5 questions progressives basées uniquement sur les extraits. Réponds uniquement en JSON valide : {\"questions\":[{\"question\":\"...\",\"type\":\"choix|court\",\"choix\":[\"...\"],\"reponse\":\"...\",\"explication\":\"...\",\"source\":\"...\"}]}. N'inclus pas de réponse si les extraits ne permettent pas de la vérifier.`,
   erreur: "Analyse la réponse de l'élève. Classe la difficulté : compréhension, connaissance, application ou méthode. Explique brièvement, donne une piste et un mini-exercice. Si les éléments ne suffisent pas à conclure, dis « à vérifier ».",
   revision: "Rédige une fiche courte avec notions essentielles, erreurs fréquentes et deux questions d'auto-évaluation avec réponses. Utilise uniquement les extraits pour les faits propres au programme.",
+  devoir: "Crée un devoir commun d’entraînement type BEF pour la 9e année à Djibouti. Utilise uniquement les chapitres et la période fournis. Présente le SUJET autonome avec durée, note totale, consignes et barème. Adapte les exercices à la discipline : SVT (connaissances, documents et analyse), physique-chimie (grandeurs, unités et calculs), mathématiques (applications et problèmes), français (compréhension, langue et expression), arabe (compréhension et langue), anglais (vocabulaire et grammaire), histoire-géographie (repères et documents), informatique (notions et algorithmes). Respecte le niveau de difficulté demandé. Puis fournis le CORRIGÉ intégral question par question, avec réponses, explications, calculs et barème. Vérifie le total. Sans source CRIPEN exacte, indique « Sujet d’entraînement proposé — non officiel ». N’invente aucun chapitre.",
 };
 
 export function buildPedagogyMessages(input: {
@@ -29,6 +31,7 @@ export function buildPedagogyMessages(input: {
   subject: string;
   year: string;
   context: string;
+  assessment?: { period: string; chapters: string; duration: string; totalPoints: string; customPeriod: string; difficulty: string };
 }) {
   const isArabic = /arabe|العربية|العربي|مهن المستقبل|شخصيات ومواقف|مراجعة|مراجعة البكالوريا/i.test(
     input.subject + " " + input.question + " " + input.recognizedExercise,
@@ -55,6 +58,7 @@ export function buildPedagogyMessages(input: {
     reponseEleve: input.studentAnswer.slice(0, 5000),
     matiere: input.subject,
     sessionBEF: input.year,
+    parametresDevoir: input.assessment ?? null,
     extraitsDocumentaires: input.context.slice(0, 16000),
   });
   const user = "MODE : " + input.mode + "\nCONSIGNE PÉDAGOGIQUE : " + MODE_INSTRUCTIONS[input.mode] +
