@@ -115,3 +115,14 @@ Une première intégration est présente sur la branche `feat/devoirs-communs-be
 - export du sujet et du corrigé en document Word compatible (`.doc`) avec les sources disponibles.
 
 Cette première version doit encore réussir les tests automatisés, la vérification TypeScript et la compilation Next.js. La prévisualisation Vercel doit également être vérifiée. La branche `main` reste inchangée jusqu’à validation de ces contrôles et revue finale.
+
+
+## Contrôle manuel avant fusion
+
+- Ouvrir le mode « Devoir commun type BEF » et choisir une matière.
+- Saisir les chapitres réellement vus et vérifier le comportement avec un seul chapitre puis plusieurs chapitres.
+- Tester les périodes prédéfinies et la période personnalisée.
+- Vérifier que la durée, la note et la difficulté apparaissent dans le sujet généré.
+- Vérifier l’ordre question → réponse dans le corrigé et le total des points.
+- Télécharger le fichier Word et contrôler que le texte intégral et les sources y figurent.
+- Confirmer qu’aucune source CRIPEN n’est revendiquée sans correspondance exacte.
