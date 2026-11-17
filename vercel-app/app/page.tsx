@@ -153,6 +153,34 @@ export default function Home() {
     setError("");
   }
 
+  function downloadWord() {
+    if (!result) return;
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[character] ?? character);
+    const sourceList = result.sources.map((source) =>
+      "<li><strong>" + escapeHtml(source.filename) + "</strong> — page/segment " + source.page + "</li>",
+    ).join("");
+    const documentHtml = "<!doctype html><html><head><meta charset='utf-8'><title>Devoir commun BEF</title></head><body>" +
+      "<h1>DjibotChat 9ème — Devoir commun type BEF</h1>" +
+      "<p><strong>Matière :</strong> " + escapeHtml(subject) + "</p>" +
+      "<p><strong>Période :</strong> " + escapeHtml(assessmentPeriod === "Période personnalisée" ? assessmentCustomPeriod : assessmentPeriod) + "</p>" +
+      "<p><strong>Chapitres :</strong> " + escapeHtml(assessmentChapters) + "</p>" +
+      "<hr><h2>Sujet et corrigé</h2><pre style='white-space:pre-wrap;font-family:Arial,sans-serif'>" + escapeHtml(result.answer) + "</pre>" +
+      (sourceList ? "<h2>Sources consultées</h2><ul>" + sourceList + "</ul>" : "") +
+      (result.warning ? "<p><strong>Note :</strong> " + escapeHtml(result.warning) + "</p>" : "") +
+      "</body></html>";
+    const blob = new Blob(["\ufeff", documentHtml], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "devoir-commun-bef-" + subject.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".doc";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function chooseSubject(value: string) {
     setSubject(value);
     document.getElementById("subject")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -238,6 +266,7 @@ export default function Home() {
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
       <h2>Corrigé et explication</h2>
+      <button type="button" className="wordExportButton" onClick={downloadWord}>⬇️ Télécharger le sujet et le corrigé en Word</button>
       {result.correctionStatus === "ai_generated_unverified" && <p className="hint"><strong>Résolution IA — non officielle :</strong> aucun corrigé CRIPEN correspondant n’a été retrouvé. Vérifie le raisonnement avec ton professeur ou ton manuel.</p>}
       {result.correctionStatus === "official_candidate" && <p className="hint"><strong>Source officielle candidate :</strong> un document CRIPEN de type correction figure parmi les résultats. Vérifie sa correspondance avec l’énoncé avant de considérer la correction comme officielle.</p>}
       {result.warning && <p className="hint">{result.warning}</p>}
