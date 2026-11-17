@@ -131,6 +131,7 @@ export async function POST(request: Request) {
       duration: String(form.get("assessmentDuration") ?? "1 heure").slice(0, 40),
       totalPoints: String(form.get("assessmentPoints") ?? "20").slice(0, 10),
       customPeriod: String(form.get("assessmentCustomPeriod") ?? "").slice(0, 120),
+      difficulty: String(form.get("assessmentDifficulty") ?? "Standard").slice(0, 40),
     };
     if (mode === "devoir" && !assessment.chapters.trim()) {
       return NextResponse.json({ error: "Indique les chapitres réellement étudiés pour construire un devoir adapté." }, { status: 400 });
