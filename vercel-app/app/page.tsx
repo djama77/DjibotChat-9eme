@@ -155,9 +155,7 @@ export default function Home() {
 
   function downloadWord() {
     if (!result) return;
-    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    })[character] ?? character);
+    const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\\\"", "&quot;").replaceAll("\\'", "&#39;");
     const sourceList = result.sources.map((source) =>
       "<li><strong>" + escapeHtml(source.filename) + "</strong> — page/segment " + source.page + "</li>",
     ).join("");
@@ -266,7 +264,7 @@ export default function Home() {
     {error && <section className="error" role="alert">{error}</section>}
     {result && <section className="panel answer">
       <h2>Corrigé et explication</h2>
-      <button type="button" className="wordExportButton" onClick={downloadWord}>⬇️ Télécharger le sujet et le corrigé en Word</button>
+      {mode === "devoir" && <button type="button" className="wordExportButton" onClick={downloadWord}>⬇️ Télécharger le sujet et le corrigé en Word</button>}
       {result.correctionStatus === "ai_generated_unverified" && <p className="hint"><strong>Résolution IA — non officielle :</strong> aucun corrigé CRIPEN correspondant n’a été retrouvé. Vérifie le raisonnement avec ton professeur ou ton manuel.</p>}
       {result.correctionStatus === "official_candidate" && <p className="hint"><strong>Source officielle candidate :</strong> un document CRIPEN de type correction figure parmi les résultats. Vérifie sa correspondance avec l’énoncé avant de considérer la correction comme officielle.</p>}
       {result.warning && <p className="hint">{result.warning}</p>}
