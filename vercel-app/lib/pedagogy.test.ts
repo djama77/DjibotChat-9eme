@@ -78,7 +78,7 @@ test("BEF assessment mode includes chapter scope and a complete non-official sub
   const messages = buildPedagogyMessages({
     mode: "devoir", question: "Génère un devoir commun", recognizedExercise: "", studentAnswer: "",
     subject: "SVT", year: "2026", context: "Guide professeur",
-    assessment: { period: "Deux premiers mois", chapters: "Cellule et génétique", duration: "1 heure", totalPoints: "20", customPeriod: "" },
+    assessment: { period: "Deux premiers mois", chapters: "Cellule et génétique", duration: "1 heure", totalPoints: "20", customPeriod: "", difficulty: "Standard" },
   });
   assert.ok(messages[1].content.includes("SUJET"));
   assert.ok(messages[1].content.includes("CORRIGÉ"));
