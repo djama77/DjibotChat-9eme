@@ -51,6 +51,7 @@ export default function Home() {
   const [assessmentCustomPeriod, setAssessmentCustomPeriod] = useState("");
   const [assessmentDuration, setAssessmentDuration] = useState("1 heure");
   const [assessmentPoints, setAssessmentPoints] = useState("20");
+  const [assessmentDifficulty, setAssessmentDifficulty] = useState("Standard");
   const [studentAnswer, setStudentAnswer] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +110,7 @@ export default function Home() {
       data.set("assessmentCustomPeriod", assessmentCustomPeriod);
       data.set("assessmentDuration", assessmentDuration);
       data.set("assessmentPoints", assessmentPoints);
+      data.set("assessmentDifficulty", assessmentDifficulty);
       data.set("recognizedExercise", recognizedExercise);
       documents.forEach((file) => data.append("guides", file));
 
@@ -164,6 +166,7 @@ export default function Home() {
       "<p><strong>Matière :</strong> " + escapeHtml(subject) + "</p>" +
       "<p><strong>Période :</strong> " + escapeHtml(assessmentPeriod === "Période personnalisée" ? assessmentCustomPeriod : assessmentPeriod) + "</p>" +
       "<p><strong>Chapitres :</strong> " + escapeHtml(assessmentChapters) + "</p>" +
+      "<p><strong>Durée / note / difficulté :</strong> " + escapeHtml(assessmentDuration) + " / " + escapeHtml(assessmentPoints) + " / " + escapeHtml(assessmentDifficulty) + "</p>" +
       "<hr><h2>Sujet et corrigé</h2><pre style='white-space:pre-wrap;font-family:Arial,sans-serif'>" + escapeHtml(result.answer) + "</pre>" +
       (sourceList ? "<h2>Sources consultées</h2><ul>" + sourceList + "</ul>" : "") +
       (result.warning ? "<p><strong>Note :</strong> " + escapeHtml(result.warning) + "</p>" : "") +
@@ -250,6 +253,8 @@ export default function Home() {
         <select id="assessmentDuration" value={assessmentDuration} onChange={(event) => setAssessmentDuration(event.target.value)}><option>1 heure</option><option>1 heure 30</option><option>2 heures</option></select>
         <label htmlFor="assessmentPoints">Note totale</label>
         <select id="assessmentPoints" value={assessmentPoints} onChange={(event) => setAssessmentPoints(event.target.value)}><option value="20">Sur 20</option><option value="40">Sur 40</option></select>
+        <label htmlFor="assessmentDifficulty">Niveau de difficulté</label>
+        <select id="assessmentDifficulty" value={assessmentDifficulty} onChange={(event) => setAssessmentDifficulty(event.target.value)}><option>Progressif</option><option>Standard</option><option>Renforcé</option></select>
       </section>}
       {mode === "erreur" && <><label htmlFor="studentAnswer">Ta réponse à analyser</label><textarea id="studentAnswer" rows={3} value={studentAnswer} onChange={(event) => setStudentAnswer(event.target.value)} placeholder="Écris ta réponse pour analyser ton raisonnement…" /></>}
       <label htmlFor="guides">📎 Ajouter une photo ou un document</label>
