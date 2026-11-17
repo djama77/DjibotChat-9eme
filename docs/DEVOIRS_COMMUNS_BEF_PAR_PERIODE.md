@@ -104,6 +104,14 @@ Les devoirs créés par l'application doivent porter la mention « Sujet d'entra
 - « Devoir commun d'Histoire-Géographie — chapitres étudiés depuis la rentrée — 1 heure — /20 — avec documents et carte muette si pertinent. »
 - « Évaluation de mathématiques sur les chapitres 1 et 2 — sujet type BEF — corrigé question par question. »
 
-## Statut
+## Statut d’intégration
 
-Ce document fixe le comportement pédagogique attendu pour la future fonctionnalité. Il ne certifie pas que l'interface et le générateur sont déjà implémentés. L'intégration fonctionnelle devra être réalisée et validée séparément par tests, revue de code et déploiement de prévisualisation avant toute fusion dans `main`.
+Une première intégration est présente sur la branche `feat/devoirs-communs-bef-par-periode` :
+
+- mode « Devoir commun type BEF » dans le formulaire ;
+- choix de la matière, de la période, des chapitres, de la durée, de la note et de la difficulté ;
+- transmission des paramètres à l’API et au moteur pédagogique ;
+- consignes de génération adaptées aux disciplines et corrigé intégral question par question ;
+- export du sujet et du corrigé en document Word compatible (`.doc`) avec les sources disponibles.
+
+Cette première version doit encore réussir les tests automatisés, la vérification TypeScript et la compilation Next.js. La prévisualisation Vercel doit également être vérifiée. La branche `main` reste inchangée jusqu’à validation de ces contrôles et revue finale.
